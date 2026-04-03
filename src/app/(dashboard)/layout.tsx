@@ -43,10 +43,9 @@ export default function DashboardLayout({
       />
 
       <main
-        className="pt-16 min-h-screen transition-all duration-300"
-        style={{
-          marginLeft: sidebarCollapsed ? '72px' : '260px',
-        }}
+        className={`pt-16 min-h-screen transition-all duration-300 ${
+          sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-[260px]'
+        }`}
       >
         <div className="p-6 animate-fade-in">
           {children}

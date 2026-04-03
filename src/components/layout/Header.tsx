@@ -104,10 +104,9 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
 
   return (
     <header
-      className="glass fixed top-0 right-0 z-30 h-16 flex items-center justify-between px-6 transition-all duration-300"
-      style={{
-        left: sidebarCollapsed ? '72px' : '260px',
-      }}
+      className={`glass fixed top-0 right-0 z-30 h-16 flex items-center justify-between px-6 transition-all duration-300 left-0 ${
+        sidebarCollapsed ? 'md:left-[72px]' : 'md:left-[260px]'
+      }`}
     >
       {/* Left — Breadcrumb */}
       <div className="flex items-center gap-3">
@@ -139,7 +138,12 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
 
       {/* Right — Actions */}
       <div className="flex items-center gap-2">
-        {/* Search */}
+        {/* Mobile Search */}
+        <button className="md:hidden p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+          <Search size={18} />
+        </button>
+
+        {/* Desktop Search */}
         <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--slate-50)] dark:bg-[var(--slate-800)] border border-[var(--border-color)] transition-colors min-w-[200px]">
           <Search size={16} className="text-[var(--text-muted)]" />
           <input

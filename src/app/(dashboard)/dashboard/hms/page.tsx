@@ -35,19 +35,6 @@ interface EmployeeData {
   hireDate: string;
 }
 
-const INITIAL_EMPLOYEES: EmployeeData[] = [
-  { id: '1', code: 'NV-001', name: 'Nguyễn Thanh Hải', email: 'hai.nt@company.vn', phone: '0901-234-567', department: 'Ban Giám đốc', position: 'Tổng Giám đốc', level: 'director', status: 'active', hireDate: '2020-01-15' },
-  { id: '2', code: 'NV-002', name: 'Trần Minh Tuấn', email: 'tuan.tm@company.vn', phone: '0902-345-678', department: 'Phòng IT', position: 'Trưởng phòng IT', level: 'manager', status: 'active', hireDate: '2020-03-01' },
-  { id: '3', code: 'NV-003', name: 'Lê Thị Hương Giang', email: 'giang.lth@company.vn', phone: '0903-456-789', department: 'Phòng Nhân sự', position: 'Trưởng phòng HR', level: 'manager', status: 'active', hireDate: '2020-02-10' },
-  { id: '4', code: 'NV-004', name: 'Phạm Đức Anh', email: 'anh.pd@company.vn', phone: '0904-567-890', department: 'Phòng Kinh doanh', position: 'Giám đốc Kinh doanh', level: 'director', status: 'active', hireDate: '2020-04-20' },
-  { id: '5', code: 'NV-005', name: 'Hoàng Minh Châu', email: 'chau.hm@company.vn', phone: '0905-678-901', department: 'Phòng Marketing', position: 'Marketing Manager', level: 'manager', status: 'active', hireDate: '2021-01-05' },
-  { id: '6', code: 'NV-006', name: 'Vũ Quang Huy', email: 'huy.vq@company.vn', phone: '0906-789-012', department: 'Phòng IT', position: 'Senior Developer', level: 'senior', status: 'active', hireDate: '2021-06-15' },
-  { id: '7', code: 'NV-007', name: 'Đặng Thu Hà', email: 'ha.dt@company.vn', phone: '0907-890-123', department: 'Phòng Kế toán', position: 'Kế toán trưởng', level: 'lead', status: 'active', hireDate: '2020-07-01' },
-  { id: '8', code: 'NV-008', name: 'Bùi Văn Nam', email: 'nam.bv@company.vn', phone: '0908-901-234', department: 'Phòng Sản xuất', position: 'Quản đốc', level: 'manager', status: 'active', hireDate: '2020-05-10' },
-  { id: '9', code: 'NV-009', name: 'Ngô Thị Lan Anh', email: 'anh.ntl@company.vn', phone: '0909-012-345', department: 'Phòng QA/QC', position: 'QC Supervisor', level: 'lead', status: 'probation', hireDate: '2024-11-01' },
-  { id: '10', code: 'NV-010', name: 'Trịnh Đức Mạnh', email: 'manh.td@company.vn', phone: '0910-123-456', department: 'Phòng R&D', position: 'R&D Engineer', level: 'mid', status: 'active', hireDate: '2023-03-15' },
-];
-
 const STATUS_MAP: Record<string, { label: string; variant: 'success' | 'warning' | 'info' | 'danger' }> = {
   active: { label: 'Đang làm việc', variant: 'success' },
   probation: { label: 'Thử việc', variant: 'warning' },
@@ -57,7 +44,7 @@ const STATUS_MAP: Record<string, { label: string; variant: 'success' | 'warning'
 
 const LEVEL_MAP: Record<string, string> = {
   intern: 'Thực tập sinh', junior: 'Nhân viên', mid: 'Nhân viên',
-  senior: 'Chuyên viên cao cấp', lead: 'Trưởng nhóm', manager: 'Trưởng phòng', director: 'Giám đốc',
+  senior: 'Chuyên viên', lead: 'Trưởng nhóm', manager: 'Trưởng phòng', director: 'Giám đốc',
 };
 
 type Tab = 'overview' | 'employees' | 'departments';
@@ -66,7 +53,8 @@ export default function HMSPage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('all');
-  const [employees, setEmployees] = useState<EmployeeData[]>(INITIAL_EMPLOYEES);
+  const [employees, setEmployees] = useState<EmployeeData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<EmployeeData | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeData | null>(null);
@@ -76,6 +64,24 @@ export default function HMSPage() {
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', department: '', position: '', level: 'mid', status: 'active', hireDate: '',
   });
+
+  // Fetch employees from API directly
+  React.useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const res = await fetch('/api/employees');
+        const json = await res.json();
+        if (json.success) {
+          setEmployees(json.data);
+        }
+      } catch (error) {
+        console.error('Failed to load employees', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchEmployees();
+  }, []);
 
   const totalEmployees = DEPARTMENTS.reduce((sum, d) => sum + d.employeeCount, 0);
 
@@ -213,61 +219,114 @@ export default function HMSPage() {
           </div>
 
           <Card padding="none">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr style={{ background: 'var(--slate-50)' }}>
-                    {['Nhân viên', 'Phòng ban', 'Chức vụ', 'Trạng thái', 'Ngày vào', ''].map((h, i) => (
-                      <th key={i} className={`${i === 5 ? 'text-right' : 'text-left'} text-xs font-semibold uppercase tracking-wider px-5 py-3`} style={{ color: 'var(--text-muted)' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+            {isLoading ? (
+              <div className="p-8 flex flex-col items-center justify-center gap-4 animate-pulse">
+                <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-[var(--primary-400)] animate-spin" />
+                <p className="text-sm text-[var(--text-muted)]">Đang tải danh sách nhân sự...</p>
+              </div>
+            ) : filteredEmployees.length === 0 ? (
+              <div className="p-12 flex flex-col items-center justify-center">
+                <Users size={40} className="mb-4 text-[var(--text-muted)] opacity-50" />
+                <p className="text-[var(--text-secondary)] font-medium">Không tìm thấy nhân viên nào</p>
+              </div>
+            ) : (
+              <>
+                {/* ─── Desktop Table View ─── */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr style={{ background: 'var(--slate-50)' }}>
+                        {['Nhân viên', 'Phòng ban', 'Chức vụ', 'Trạng thái', 'Ngày vào', ''].map((h, i) => (
+                          <th key={i} className={`${i === 5 ? 'text-right' : 'text-left'} text-xs font-semibold uppercase tracking-wider px-5 py-3`} style={{ color: 'var(--text-muted)' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+                      {filteredEmployees.map((emp) => {
+                        const status = STATUS_MAP[emp.status] || STATUS_MAP.active;
+                        const initials = emp.name.split(' ').slice(-2).map(n => n[0]).join('');
+                        const deptColor = DEPARTMENTS.find(d => d.name === emp.department)?.color || 'var(--primary-500)';
+
+                        return (
+                          <tr key={emp.id} className="group hover:bg-[var(--slate-25)] transition-colors duration-150">
+                            <td className="px-5 py-3.5">
+                              <div className="flex items-center gap-3 cursor-pointer" onClick={() => setSelectedEmployee(emp)}>
+                                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: `linear-gradient(135deg, ${deptColor}, ${deptColor}cc)` }}>
+                                  {initials}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-semibold hover:underline">{emp.name}</p>
+                                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{emp.code} • {emp.email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-5 py-3.5 text-sm">{emp.department}</td>
+                            <td className="px-5 py-3.5">
+                              <p className="text-sm">{emp.position}</p>
+                              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{LEVEL_MAP[emp.level] || emp.level}</p>
+                            </td>
+                            <td className="px-5 py-3.5">
+                              <Badge variant={status.variant} icon={BadgeCheck}>{status.label}</Badge>
+                            </td>
+                            <td className="px-5 py-3.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                              {new Date(emp.hireDate).toLocaleDateString('vi-VN')}
+                            </td>
+                            <td className="px-5 py-3.5 text-right">
+                              <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                <button onClick={() => openEditModal(emp)} className="p-1.5 rounded-lg hover:bg-[var(--slate-100)] transition-colors" title="Chỉnh sửa">
+                                  <Edit size={14} style={{ color: 'var(--primary-500)' }} />
+                                </button>
+                                <button onClick={() => setIsDeleteConfirm(emp.id)} className="p-1.5 rounded-lg hover:bg-[var(--rose-light)] transition-colors" title="Xóa">
+                                  <Trash2 size={14} style={{ color: 'var(--rose)' }} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* ─── Mobile Card View ─── */}
+                <div className="md:hidden flex flex-col divide-y divide-[var(--border-color)]">
                   {filteredEmployees.map((emp) => {
                     const status = STATUS_MAP[emp.status] || STATUS_MAP.active;
                     const initials = emp.name.split(' ').slice(-2).map(n => n[0]).join('');
                     const deptColor = DEPARTMENTS.find(d => d.name === emp.department)?.color || 'var(--primary-500)';
 
                     return (
-                      <tr key={emp.id} className="group hover:bg-[var(--slate-25)] transition-colors duration-150">
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setSelectedEmployee(emp)}>
-                            <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: `linear-gradient(135deg, ${deptColor}, ${deptColor}cc)` }}>
+                      <div key={emp.id} className="p-4 flex flex-col gap-3 active:bg-[var(--slate-50)] transition-colors" onClick={() => setSelectedEmployee(emp)}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${deptColor}, ${deptColor}cc)` }}>
                               {initials}
                             </div>
                             <div>
-                              <p className="text-sm font-semibold hover:underline">{emp.name}</p>
-                              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{emp.code} • {emp.email}</p>
+                              <p className="text-sm font-semibold">{emp.name}</p>
+                              <p className="text-xs text-[var(--text-secondary)]">{emp.position}</p>
                             </div>
                           </div>
-                        </td>
-                        <td className="px-5 py-3.5 text-sm">{emp.department}</td>
-                        <td className="px-5 py-3.5">
-                          <p className="text-sm">{emp.position}</p>
-                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{LEVEL_MAP[emp.level] || emp.level}</p>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <Badge variant={status.variant} icon={BadgeCheck}>{status.label}</Badge>
-                        </td>
-                        <td className="px-5 py-3.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                          {new Date(emp.hireDate).toLocaleDateString('vi-VN')}
-                        </td>
-                        <td className="px-5 py-3.5 text-right">
-                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            <button onClick={() => openEditModal(emp)} className="p-1.5 rounded-lg hover:bg-[var(--slate-100)] transition-colors" title="Chỉnh sửa">
-                              <Edit size={14} style={{ color: 'var(--primary-500)' }} />
-                            </button>
-                            <button onClick={() => setIsDeleteConfirm(emp.id)} className="p-1.5 rounded-lg hover:bg-[var(--rose-light)] transition-colors" title="Xóa">
-                              <Trash2 size={14} style={{ color: 'var(--rose)' }} />
-                            </button>
+                          <button onClick={(e) => { e.stopPropagation(); openEditModal(emp); }} className="p-1.5 bg-[var(--slate-50)] rounded-lg">
+                            <Edit size={14} className="text-[var(--text-muted)]" />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between text-xs mt-1">
+                          <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
+                            <BadgeCheck size={12} />
+                            <span>{emp.code}</span>
+                            <span className="opacity-50">•</span>
+                            <span>{emp.department}</span>
                           </div>
-                        </td>
-                      </tr>
+                          <Badge variant={status.variant}>{status.label}</Badge>
+                        </div>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              </>
+            )}
+            
             <div className="flex items-center justify-between px-5 py-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Hiển thị {filteredEmployees.length} / {employees.length} nhân viên</p>
             </div>

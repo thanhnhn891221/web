@@ -67,15 +67,24 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   };
 
   return (
-    <aside
-      className={`
-        fixed top-0 left-0 h-screen z-40
-        flex flex-col
-        transition-all duration-300 ease-in-out
-        ${collapsed ? 'w-[72px]' : 'w-[260px]'}
-      `}
-      style={{ background: 'var(--bg-sidebar)' }}
-    >
+    <>
+      {/* Mobile Backdrop */}
+      {!collapsed && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 md:hidden"
+          onClick={onToggle}
+        />
+      )}
+      
+      <aside
+        className={`
+          fixed top-0 left-0 h-screen z-40
+          flex flex-col
+          transition-transform duration-300 ease-in-out
+          ${collapsed ? '-translate-x-full md:translate-x-0 md:w-[72px]' : 'translate-x-0 w-[260px]'}
+        `}
+        style={{ background: 'var(--bg-sidebar)' }}
+      >
       {/* Logo */}
       <div className="flex items-center h-16 px-4 border-b border-white/10">
         <div className="flex items-center gap-3 overflow-hidden">
@@ -227,5 +236,6 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </button>
       </div>
     </aside>
+    </>
   );
 }

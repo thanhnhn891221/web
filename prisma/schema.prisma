@@ -1,0 +1,162 @@
+// AIO.MS — Database Schema
+// PostgreSQL via Supabase + Prisma ORM
+// RBAC: Many-to-many User ↔ Role, Role ↔ Module permissions
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CORE & AUTH
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String   // bcrypt hash
+  name        String
+  avatar      String?
+  isActive    Boolean  @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Many-to-many: 1 user can have multiple roles
+  userRoles   UserRole[]
+  employee    Employee?
+  auditLogs   AuditLog[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  code        String   @unique   // super_admin, admin, operations_exec, finance_viewer...
+  name        String              // Quản trị tối cao, Vận hành - Thực thi...
+  description String?
+  groupCode   String?             // foundation, operations, market, finance (null = system role)
+  isSystem    Boolean  @default(false) // system roles cannot be deleted
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userRoles   UserRole[]
+  permissions RoleModulePermission[]
+
+  @@map("roles")
+}
+
+// Join table: User ↔ Role (many-to-many)
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now())
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model Module {
+  id        String   @id @default(cuid())
+  code      String   @unique   // CORE, IMS, HMS, PMS, WMS, TMS, FMS, QMS, RMS, MMS, SMS, OMS, DMS, AMS, CMS, BMS
+  name      String              // Admin & Core, IT Management...
+  nameVi    String              // Quản trị Hệ thống, Quản lý CNTT...
+  groupCode String              // foundation, operations, market, finance
+  icon      String              // Lucide icon name
+  color     String              // HSL color string
+  href      String              // /dashboard, /dashboard/ims...
+  isEnabled Boolean  @default(true)
+  orderIndex Int
+
+  permissions RoleModulePermission[]
+
+  @@map("modules")
+}
+
+// Role ↔ Module permissions (RBAC matrix)
+model RoleModulePermission {
+  id        String  @id @default(cuid())
+  roleId    String
+  moduleId  String
+  canView   Boolean @default(false)
+  canCreate Boolean @default(false)
+  canEdit   Boolean @default(false)
+  canDelete Boolean @default(false)
+  role      Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  module    Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, moduleId])
+  @@map("role_module_permissions")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String   // create, update, delete, login, logout, access_denied
+  module    String   // CORE, HMS, PMS...
+  target    String   // "Employee NV-001", "Order OMS-1254"
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([module])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// HMS — Human Resource Management
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model Department {
+  id          String       @id @default(cuid())
+  name        String
+  code        String       @unique // BGD, IT, HR, SALE, SX, KT
+  parentId    String?
+  parent      Department?  @relation("DeptHierarchy", fields: [parentId], references: [id])
+  children    Department[] @relation("DeptHierarchy")
+  managerId   String?
+  description String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  employees   Employee[]
+
+  @@map("departments")
+}
+
+model Employee {
+  id           String   @id @default(cuid())
+  employeeCode String   @unique  // NV-001, NV-002
+  fullName     String
+  email        String   @unique
+  phone        String?
+  avatar       String?
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  position     String
+  level        String?  // intern, junior, mid, senior, lead, manager, director
+  hireDate     DateTime
+  status       String   @default("active") // active, probation, on_leave, resigned
+  salary       Float?
+  userId       String?  @unique
+  user         User?    @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([departmentId])
+  @@index([status])
+  @@map("employees")
+}

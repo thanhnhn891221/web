@@ -4,31 +4,18 @@ import React, { useState } from 'react';
 import { TrendingUp, Users, DollarSign, Target, Search, Phone, Mail, MapPin, Star, ShoppingBag } from 'lucide-react';
 import { Button, Badge, Card, Modal, StatCard } from '@/components/ui';
 
-const CUSTOMERS = [
-  { id: '1', code: 'KH-001', name: 'Siêu thị CoopMart', contact: 'Lê Thị Hà', phone: '028-1234-5678', email: 'ha@coopmart.vn', address: 'TP.HCM', totalOrders: 156, totalRevenue: 2400000000, tier: 'platinum' },
-  { id: '2', code: 'KH-002', name: 'Bách Hóa Xanh', contact: 'Trần Minh An', phone: '028-9876-5432', email: 'an@bhx.vn', address: 'TP.HCM', totalOrders: 98, totalRevenue: 1800000000, tier: 'gold' },
-  { id: '3', code: 'KH-003', name: 'Vinmart', contact: 'Nguyễn Quốc Việt', phone: '024-5555-6666', email: 'viet@vinmart.vn', address: 'Hà Nội', totalOrders: 72, totalRevenue: 950000000, tier: 'gold' },
-  { id: '4', code: 'KH-004', name: 'Đại lý Phương Nam', contact: 'Phạm Văn Long', phone: '0251-234-5678', email: 'long@gmail.com', address: 'Đồng Nai', totalOrders: 45, totalRevenue: 320000000, tier: 'silver' },
-  { id: '5', code: 'KH-005', name: 'Mini Stop Q.1', contact: 'Hoàng Thị Dung', phone: '028-7777-8888', email: 'dung@ministop.vn', address: 'Q.1, TP.HCM', totalOrders: 23, totalRevenue: 85000000, tier: 'bronze' },
-];
-
-const PIPELINE = [
-  { id: '1', customer: 'Siêu thị Lotte', product: 'Gói combo bánh mì Q2', value: 500000000, stage: 'negotiation', probability: 75, owner: 'Phạm Đức Anh' },
-  { id: '2', customer: 'Circle K Việt Nam', product: 'HĐ độc quyền kẹo dẻo', value: 1200000000, stage: 'proposal', probability: 50, owner: 'Hoàng Minh Châu' },
-  { id: '3', customer: '7-Eleven VN', product: 'Cung cấp sandwich tươi', value: 800000000, stage: 'qualified', probability: 30, owner: 'Phạm Đức Anh' },
-  { id: '4', customer: 'BigC', product: 'Chương trình KM mùa hè', value: 350000000, stage: 'lead', probability: 15, owner: 'Hoàng Minh Châu' },
-  { id: '5', customer: 'Family Mart', product: 'HĐ nước ép cam tươi', value: 420000000, stage: 'closed_won', probability: 100, owner: 'Phạm Đức Anh' },
-];
-
 const TIER_COLORS: Record<string, { label: string; color: string }> = {
   bronze: { label: 'Bronze', color: '#CD7F32' }, silver: { label: 'Silver', color: '#C0C0C0' },
   gold: { label: 'Gold', color: '#FFD700' }, platinum: { label: 'Platinum', color: '#B0B0B0' },
 };
 
 const STAGE_MAP: Record<string, { label: string; variant: 'default' | 'info' | 'warning' | 'success' | 'danger'; pct: number }> = {
-  lead: { label: 'Lead mới', variant: 'default', pct: 10 }, qualified: { label: 'Đủ điều kiện', variant: 'info', pct: 30 },
-  proposal: { label: 'Đã gửi đề xuất', variant: 'info', pct: 50 }, negotiation: { label: 'Đang đàm phán', variant: 'warning', pct: 75 },
-  closed_won: { label: 'Chốt thành công', variant: 'success', pct: 100 }, closed_lost: { label: 'Thất bại', variant: 'danger', pct: 0 },
+  new: { label: 'Lead mới', variant: 'default', pct: 10 },
+  contacted: { label: 'Đã liên hệ', variant: 'info', pct: 30 },
+  qualified: { label: 'Đủ điều kiện', variant: 'info', pct: 50 },
+  proposal: { label: 'Đã gửi đề xuất', variant: 'warning', pct: 75 },
+  won: { label: 'Chốt thành công', variant: 'success', pct: 100 },
+  lost: { label: 'Thất bại', variant: 'danger', pct: 0 },
 };
 
 type Tab = 'customers' | 'pipeline';
@@ -36,11 +23,38 @@ type Tab = 'customers' | 'pipeline';
 export default function SMSPage() {
   const [activeTab, setActiveTab] = useState<Tab>('customers');
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<(typeof CUSTOMERS)[0] | null>(null);
+  const [selected, setSelected] = useState<any | null>(null);
+
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [resCust, resLeads] = await Promise.all([
+          fetch('/api/customers'),
+          fetch('/api/leads')
+        ]);
+        const jsonCust = await resCust.json();
+        const jsonLeads = await resLeads.json();
+        
+        if (jsonCust.success) setCustomers(jsonCust.data);
+        if (jsonLeads.success) setLeads(jsonLeads.data);
+      } catch (err) {
+        console.error('Error fetching SMS data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const fmt = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
-  const totalRev = CUSTOMERS.reduce((s, c) => s + c.totalRevenue, 0);
-  const pipeVal = PIPELINE.filter(p => !p.stage.startsWith('closed')).reduce((s, p) => s + p.value, 0);
-  const filtered = CUSTOMERS.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
+  // Defaulting to 0 since our fresh mock doesn't have totalRevenue populated for all.
+  const totalRev = customers.reduce((s, c) => s + (c.rating || 0), 0); // Temporary using rating or 0
+  const pipeVal = leads.filter(p => !p.status?.startsWith('lost')).reduce((s, p) => s + (p.value || 0), 0);
+  const filtered = customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="space-y-6">
@@ -58,8 +72,8 @@ export default function SMSPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-        <StatCard title="Khách hàng" value={CUSTOMERS.length} icon={Users} color="var(--primary-500)" />
-        <StatCard title="Doanh thu tổng" value={fmt(totalRev)} icon={DollarSign} color="var(--emerald)" />
+        <StatCard title="Khách hàng" value={customers.length} icon={Users} color="var(--primary-500)" />
+        <StatCard title="Leads Tiềm năng" value={leads.length} icon={Users} color="var(--emerald)" />
         <StatCard title="Pipeline" value={fmt(pipeVal)} icon={Target} color="var(--amber)" changeLabel="Đang chờ chốt" />
         <StatCard title="Tỷ lệ chốt" value="62%" icon={TrendingUp} color="var(--accent-500)" change={8.5} />
       </div>
@@ -68,72 +82,81 @@ export default function SMSPage() {
         {([{ key: 'customers' as Tab, label: 'Khách hàng', icon: Users }, { key: 'pipeline' as Tab, label: 'Pipeline', icon: Target }]).map(tab => {
           const Icon = tab.icon;
           return (<button key={tab.key} onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === tab.key ? 'bg-white text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)]'}`}>
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === tab.key ? 'bg-white text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
             <Icon size={16} />{tab.label}</button>);
         })}
       </div>
 
-      {activeTab === 'customers' && (
-        <div className="space-y-4 animate-fade-in">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
-            <Search size={16} style={{ color: 'var(--text-muted)' }} />
-            <input type="text" placeholder="Tìm khách hàng..." value={search} onChange={e => setSearch(e.target.value)} className="bg-transparent text-sm outline-none w-full" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
-            {filtered.map(c => {
-              const t = TIER_COLORS[c.tier];
-              return (
-                <Card key={c.id} hover padding="lg" className="group cursor-pointer" onClick={() => setSelected(c)}>
-                  <div className="flex items-start justify-between">
-                    <div><p className="text-xs font-mono font-semibold" style={{ color: 'var(--primary-500)' }}>{c.code}</p>
-                      <h3 className="text-base font-semibold mt-1">{c.name}</h3></div>
-                    <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold" style={{ background: `${t.color}20`, color: t.color }}><Star size={12} /> {t.label}</div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
-                    <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Tổng đơn</p><p className="text-sm font-bold">{c.totalOrders}</p></div>
-                    <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Doanh thu</p><p className="text-sm font-bold">{(c.totalRevenue / 1e9).toFixed(1)}B</p></div>
-                  </div>
-                </Card>);
-            })}
-          </div>
+      {isLoading ? (
+        <div className="p-8 flex flex-col items-center justify-center gap-4 animate-pulse">
+          <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-[var(--primary-400)] animate-spin" />
+          <p className="text-sm text-[var(--text-muted)]">Đang kết nối khối Thị Trường...</p>
         </div>
-      )}
+      ) : (
+        <>
+          {activeTab === 'customers' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
+                <Search size={16} style={{ color: 'var(--text-muted)' }} />
+                <input type="text" placeholder="Tìm khách hàng..." value={search} onChange={e => setSearch(e.target.value)} className="bg-transparent text-sm outline-none w-full" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
+                {filtered.map(c => {
+                  const t = TIER_COLORS[c.tier] || TIER_COLORS.bronze;
+                  return (
+                    <Card key={c.id} hover padding="lg" className="group cursor-pointer" onClick={() => setSelected(c)}>
+                      <div className="flex items-start justify-between">
+                        <div><p className="text-xs font-mono font-semibold" style={{ color: 'var(--primary-500)' }}>{c.type}</p>
+                          <h3 className="text-base font-semibold mt-1">{c.name}</h3></div>
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold" style={{ background: `${t.color}20`, color: t.color }}><Star size={12} /> {t.label}</div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                        <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Email</p><p className="text-sm font-semibold truncate">{c.email}</p></div>
+                        <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Số điện thoại</p><p className="text-sm font-semibold truncate">{c.phone}</p></div>
+                      </div>
+                    </Card>);
+                })}
+              </div>
+            </div>
+          )}
 
-      {activeTab === 'pipeline' && (
-        <div className="space-y-3 animate-fade-in">
-          {PIPELINE.map(deal => {
-            const stage = STAGE_MAP[deal.stage];
-            return (
-              <Card key={deal.id} hover padding="lg">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2"><h3 className="text-sm font-semibold">{deal.customer}</h3><Badge variant={stage.variant}>{stage.label}</Badge></div>
-                    <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{deal.product}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      <span>Phụ trách: {deal.owner}</span><span>Xác suất: <strong>{deal.probability}%</strong></span>
+          {activeTab === 'pipeline' && (
+            <div className="space-y-3 animate-fade-in">
+              {leads.map(deal => {
+                const stage = STAGE_MAP[deal.status] || STAGE_MAP.new;
+                return (
+                  <Card key={deal.id} hover padding="lg">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center flex-wrap gap-2"><h3 className="text-sm font-semibold">{deal.company || deal.name}</h3><Badge variant={stage.variant}>{stage.label}</Badge></div>
+                        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Liên hệ: {deal.name} ({deal.phone})</p>
+                        <div className="flex flex-wrap items-center gap-4 mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                          <span>Ngày tạo: {new Date(deal.createdAt).toLocaleDateString('vi-VN')}</span><span>Mức phí: <strong className="text-[var(--text-primary)]">{deal.priority}</strong></span>
+                        </div>
+                      </div>
+                      <p className="text-lg font-bold" style={{ color: 'var(--primary-500)' }}>{fmt(deal.value)}</p>
                     </div>
-                  </div>
-                  <p className="text-lg font-bold" style={{ color: 'var(--primary-500)' }}>{fmt(deal.value)}</p>
-                </div>
-                <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--slate-100)' }}>
-                  <div className="h-full rounded-full" style={{ width: `${stage.pct}%`, background: deal.stage === 'closed_won' ? 'var(--emerald)' : 'var(--primary-500)' }} />
-                </div>
-              </Card>);
-          })}
-        </div>
+                    <div className="mt-4 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--slate-100)' }}>
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${stage.pct}%`, background: deal.status === 'won' ? 'var(--emerald)' : 'var(--primary-500)' }} />
+                    </div>
+                  </Card>);
+              })}
+            </div>
+          )}
+        </>
       )}
 
-      <Modal isOpen={!!selected} onClose={() => setSelected(null)} title={selected?.name || ''} description={selected?.code}
+      <Modal isOpen={!!selected} onClose={() => setSelected(null)} title={selected?.name || ''} description={`Loại: ${selected?.type}`}
         footer={<Button variant="ghost" onClick={() => setSelected(null)}>Đóng</Button>}>
         {selected && (
-          <div className="grid grid-cols-2 gap-4">
-            {[{ l: 'Liên hệ', v: selected.contact, i: Users }, { l: 'SĐT', v: selected.phone, i: Phone },
-              { l: 'Email', v: selected.email, i: Mail }, { l: 'Địa chỉ', v: selected.address, i: MapPin },
-              { l: 'Tổng đơn', v: `${selected.totalOrders} đơn`, i: ShoppingBag }, { l: 'Doanh thu', v: fmt(selected.totalRevenue), i: DollarSign },
-            ].map(f => { const I = f.i; return (
-              <div key={f.l} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'var(--slate-50)' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[{ l: 'Số điện thoại', v: selected.phone, i: Phone },
+              { l: 'Email', v: selected.email, i: Mail }, 
+              { l: 'Ngày tạo', v: new Date(selected.createdAt).toLocaleDateString('vi-VN'), i: ShoppingBag }
+            ].map((f, idx) => { const I = f.i; return (
+              <div key={idx} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'var(--slate-50)' }}>
                 <I size={16} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
-                <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>{f.l}</p><p className="text-sm font-medium mt-0.5">{f.v}</p></div>
+                <div className="min-w-0"><p className="text-xs" style={{ color: 'var(--text-muted)' }}>{f.l}</p><p className="text-sm font-medium mt-0.5 truncate w-full">{f.v}</p></div>
               </div>); })}
           </div>
         )}

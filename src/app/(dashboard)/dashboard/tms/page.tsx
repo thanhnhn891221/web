@@ -7,53 +7,6 @@ import {
 } from 'lucide-react';
 import { Button, Badge, Card, Modal, StatCard } from '@/components/ui';
 
-// ─── TMS Mock Data ──────────────────────────────────
-
-interface Shipment {
-  id: string;
-  code: string;
-  orderCode: string;
-  customer: string;
-  address: string;
-  driver: string;
-  driverPhone: string;
-  vehicle: string;
-  items: number;
-  weight: string;
-  status: 'pending' | 'picked_up' | 'in_transit' | 'delivered' | 'failed';
-  createdAt: string;
-  estimatedDelivery: string;
-  currentLocation?: string;
-}
-
-interface Driver {
-  id: string;
-  name: string;
-  phone: string;
-  vehicle: string;
-  licensePlate: string;
-  activeShipments: number;
-  completedToday: number;
-  status: 'available' | 'on_route' | 'off_duty';
-  rating: number;
-}
-
-const SHIPMENTS: Shipment[] = [
-  { id: '1', code: 'SHP-001', orderCode: 'OMS-1254', customer: 'Siêu thị CoopMart Lê Hồng Phong', address: '242 Lê Hồng Phong, Q.5, TP.HCM', driver: 'Nguyễn Hoàng Long', driverPhone: '0912-345-678', vehicle: '51A-12345', items: 15, weight: '120 kg', status: 'in_transit', createdAt: '2026-03-31T08:00:00', estimatedDelivery: '2026-03-31T14:00:00', currentLocation: 'Q.Thủ Đức → Q.5 (70%)' },
-  { id: '2', code: 'SHP-002', orderCode: 'OMS-1255', customer: 'Đại lý Phương Nam', address: '88 Nguyễn Huệ, Biên Hòa, Đồng Nai', driver: 'Trần Đức Mạnh', driverPhone: '0923-456-789', vehicle: '60C-67890', items: 8, weight: '85 kg', status: 'picked_up', createdAt: '2026-03-31T09:30:00', estimatedDelivery: '2026-03-31T16:00:00', currentLocation: 'KCN Mỹ Phước (Đã lấy hàng)' },
-  { id: '3', code: 'SHP-003', orderCode: 'OMS-1250', customer: 'Bách Hóa Xanh - CN Bình Dương', address: '45 Đại lộ Bình Dương, TX. TDM', driver: 'Lê Thanh Tùng', driverPhone: '0934-567-890', vehicle: '61D-11111', items: 22, weight: '200 kg', status: 'delivered', createdAt: '2026-03-31T06:00:00', estimatedDelivery: '2026-03-31T11:00:00' },
-  { id: '4', code: 'SHP-004', orderCode: 'OMS-1258', customer: 'Mini Stop Q.1', address: '50 Nguyễn Du, Q.1, TP.HCM', driver: 'Phạm Minh Khoa', driverPhone: '0945-678-901', vehicle: '51B-22222', items: 5, weight: '35 kg', status: 'pending', createdAt: '2026-03-31T10:00:00', estimatedDelivery: '2026-04-01T09:00:00' },
-  { id: '5', code: 'SHP-005', orderCode: 'OMS-1248', customer: 'Vinmart - CN Gò Vấp', address: '100 Nguyễn Oanh, Gò Vấp, TP.HCM', driver: 'Nguyễn Hoàng Long', driverPhone: '0912-345-678', vehicle: '51A-12345', items: 12, weight: '95 kg', status: 'failed', createdAt: '2026-03-30T14:00:00', estimatedDelivery: '2026-03-31T08:00:00', currentLocation: 'Khách không nhận — sai sản phẩm' },
-];
-
-const DRIVERS: Driver[] = [
-  { id: '1', name: 'Nguyễn Hoàng Long', phone: '0912-345-678', vehicle: 'Xe tải 1.5T', licensePlate: '51A-12345', activeShipments: 1, completedToday: 3, status: 'on_route', rating: 4.9 },
-  { id: '2', name: 'Trần Đức Mạnh', phone: '0923-456-789', vehicle: 'Xe tải 2T', licensePlate: '60C-67890', activeShipments: 1, completedToday: 2, status: 'on_route', rating: 4.7 },
-  { id: '3', name: 'Lê Thanh Tùng', phone: '0934-567-890', vehicle: 'Xe tải 1T', licensePlate: '61D-11111', activeShipments: 0, completedToday: 4, status: 'available', rating: 4.8 },
-  { id: '4', name: 'Phạm Minh Khoa', phone: '0945-678-901', vehicle: 'Xe van 500kg', licensePlate: '51B-22222', activeShipments: 0, completedToday: 1, status: 'available', rating: 4.5 },
-  { id: '5', name: 'Võ Quốc Bảo', phone: '0956-789-012', vehicle: 'Xe tải 3T', licensePlate: '61E-33333', activeShipments: 0, completedToday: 0, status: 'off_duty', rating: 4.3 },
-];
-
 const SHIP_STATUS: Record<string, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info'; icon: React.ElementType }> = {
   pending: { label: 'Chờ lấy hàng', variant: 'default', icon: Clock },
   picked_up: { label: 'Đã lấy hàng', variant: 'info', icon: Package },
@@ -72,11 +25,36 @@ type Tab = 'shipments' | 'drivers';
 
 export default function TMSPage() {
   const [activeTab, setActiveTab] = useState<Tab>('shipments');
-  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [selectedShipment, setSelectedShipment] = useState<any | null>(null);
 
-  const deliveredToday = SHIPMENTS.filter(s => s.status === 'delivered').length;
-  const inTransit = SHIPMENTS.filter(s => s.status === 'in_transit' || s.status === 'picked_up').length;
-  const successRate = Math.round((deliveredToday / Math.max(SHIPMENTS.length, 1)) * 100);
+  const [shipments, setShipments] = useState<any[]>([]);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [resShip, resDrv] = await Promise.all([
+          fetch('/api/shipments'),
+          fetch('/api/drivers')
+        ]);
+        const jsonShip = await resShip.json();
+        const jsonDrv = await resDrv.json();
+        
+        if (jsonShip.success) setShipments(jsonShip.data);
+        if (jsonDrv.success) setDrivers(jsonDrv.data);
+      } catch (err) {
+        console.error('Error fetching TMS data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const deliveredToday = shipments.filter(s => s.status === 'delivered').length;
+  const inTransit = shipments.filter(s => s.status === 'in_transit' || s.status === 'picked_up').length;
+  const successRate = Math.round((deliveredToday / Math.max(shipments.length, 1)) * 100);
 
   return (
     <div className="space-y-6">
@@ -96,9 +74,9 @@ export default function TMSPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-        <StatCard title="Tổng vận đơn" value={SHIPMENTS.length} icon={Package} color="var(--primary-500)" />
+        <StatCard title="Tổng vận đơn" value={shipments.length} icon={Package} color="var(--primary-500)" />
         <StatCard title="Đang vận chuyển" value={inTransit} icon={Truck} color="var(--amber)" changeLabel="Trên đường" />
-        <StatCard title="Đã giao hôm nay" value={deliveredToday} icon={CheckCircle} color="var(--emerald)" />
+        <StatCard title="Đã giao" value={deliveredToday} icon={CheckCircle} color="var(--emerald)" />
         <StatCard title="Tỷ lệ giao OK" value={`${successRate}%`} icon={Navigation} color="var(--accent-500)" />
       </div>
 
@@ -120,10 +98,15 @@ export default function TMSPage() {
       </div>
 
       {/* ─── Shipments Tab ─── */}
-      {activeTab === 'shipments' && (
+      {isLoading ? (
+        <div className="p-8 flex flex-col items-center justify-center gap-4 animate-pulse">
+          <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-[var(--primary-400)] animate-spin" />
+          <p className="text-sm text-[var(--text-muted)]">Đang kết nối khối Vận hành...</p>
+        </div>
+      ) : activeTab === 'shipments' && (
         <div className="space-y-3 animate-fade-in">
-          {SHIPMENTS.map((ship) => {
-            const status = SHIP_STATUS[ship.status];
+          {shipments.map((ship) => {
+            const status = SHIP_STATUS[ship.status] || SHIP_STATUS.pending;
             const StatusIcon = status.icon;
             return (
               <Card key={ship.id} hover padding="lg" className="group" onClick={() => setSelectedShipment(ship)}>
@@ -143,16 +126,16 @@ export default function TMSPage() {
                       </div>
                       <Badge variant={status.variant}>{status.label}</Badge>
                     </div>
-                    <h3 className="text-sm font-semibold mt-1.5">{ship.customer}</h3>
+                    <h3 className="text-sm font-semibold mt-1.5">{ship.customerName || ship.customer}</h3>
                     <div className="flex items-center gap-1.5 mt-1">
                       <MapPin size={12} style={{ color: 'var(--text-muted)' }} />
                       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{ship.address}</span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4 mt-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      <span className="flex items-center gap-1"><User size={12} /> {ship.driver}</span>
+                      <span className="flex items-center gap-1"><User size={12} /> {ship.driverName || ship.driver}</span>
                       <span className="flex items-center gap-1"><Truck size={12} /> {ship.vehicle}</span>
-                      <span className="flex items-center gap-1"><Package size={12} /> {ship.items} mặt hàng · {ship.weight}</span>
+                      <span className="flex items-center gap-1"><Package size={12} /> {ship.itemsCount || ship.items} kiện · {ship.weight || '--'}</span>
                     </div>
 
                     {ship.currentLocation && (
@@ -170,10 +153,10 @@ export default function TMSPage() {
       )}
 
       {/* ─── Drivers Tab ─── */}
-      {activeTab === 'drivers' && (
+      {!isLoading && activeTab === 'drivers' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in stagger-children">
-          {DRIVERS.map((driver) => {
-            const dStatus = DRIVER_STATUS[driver.status];
+          {drivers.map((driver) => {
+            const dStatus = DRIVER_STATUS[driver.status] || DRIVER_STATUS.available;
             return (
               <Card key={driver.id} hover padding="lg" className="group">
                 <div className="flex items-start justify-between">
@@ -217,25 +200,24 @@ export default function TMSPage() {
         </div>
       )}
 
-      {/* ─── Shipment Detail Modal ─── */}
-      <Modal
-        isOpen={!!selectedShipment}
-        onClose={() => setSelectedShipment(null)}
-        title={`Vận đơn ${selectedShipment?.code}`}
-        description={selectedShipment?.customer}
-        size="lg"
-        footer={<Button variant="ghost" onClick={() => setSelectedShipment(null)}>Đóng</Button>}
-      >
-        {selectedShipment && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {[
-                { label: 'Trạng thái', value: SHIP_STATUS[selectedShipment.status].label },
-                { label: 'Đơn hàng', value: selectedShipment.orderCode },
-                { label: 'Tài xế', value: selectedShipment.driver },
-                { label: 'SĐT', value: selectedShipment.driverPhone },
-                { label: 'Biển số', value: selectedShipment.vehicle },
-                { label: 'Trọng lượng', value: selectedShipment.weight },
+        <Modal
+          isOpen={!!selectedShipment}
+          onClose={() => setSelectedShipment(null)}
+          title={`Vận đơn ${selectedShipment?.code}`}
+          description={selectedShipment?.customerName || selectedShipment?.customer}
+          size="lg"
+          footer={<Button variant="ghost" onClick={() => setSelectedShipment(null)}>Đóng</Button>}
+        >
+          {selectedShipment && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {[
+                  { label: 'Trạng thái', value: (SHIP_STATUS[selectedShipment.status] || SHIP_STATUS.pending).label },
+                  { label: 'Đơn hàng', value: selectedShipment.orderCode },
+                  { label: 'Tài xế', value: selectedShipment.driverName || selectedShipment.driver },
+                  { label: 'SĐT', value: selectedShipment.driverPhone },
+                  { label: 'Biển số', value: selectedShipment.vehicle },
+                  { label: 'Trọng lượng', value: selectedShipment.weight || '--' },
               ].map((f) => (
                 <div key={f.label} className="p-3 rounded-xl" style={{ background: 'var(--slate-50)' }}>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{f.label}</p>

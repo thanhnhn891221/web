@@ -362,27 +362,106 @@ async function main() {
   }
   console.log(`  ✅ Warehouses and Inventory created\n`);
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // PHASE 7C SEED: OMS, SMS & TMS
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  console.log('🤝 Tạo Customers...');
+  const customersData = [
+    { name: 'Siêu thị CoopMart', phone: '0901234567', email: 'contact@coopmart.vn', type: 'B2B', tier: 'gold' },
+    { name: 'Bách Hóa Xanh', phone: '0902345678', email: 'info@bachhoaxanh.vn', type: 'B2B', tier: 'platinum' },
+    { name: 'Mini Stop Q.1', phone: '0903456789', email: 'ministopq1@gmail.com', type: 'B2B', tier: 'standard' },
+    { name: 'Khách hàng Cầm Tay', phone: '0909999999', email: 'khachle@gmail.com', type: 'B2C', tier: 'standard' },
+  ];
+  const customers: Record<string, string> = {};
+  for (const c of customersData) {
+    const cust = await prisma.customer.upsert({
+      where: { id: c.name.replace(/\s+/g, '-').toLowerCase() },
+      update: {},
+      create: {
+        id: c.name.replace(/\s+/g, '-').toLowerCase(),
+        name: c.name, phone: c.phone, email: c.email, type: c.type, tier: c.tier
+      }
+    });
+    customers[c.name] = cust.id;
+  }
+  console.log(`  ✅ ${customersData.length} customers created`);
+
+  console.log('\n📦 Tạo Sales Orders & Items...');
+  const soData = [
+    { code: 'OMS-1254', customerName: 'Siêu thị CoopMart', status: 'processing', amount: 18500000, items: [{ name: 'Sữa tươi', qty: 100, price: 185000, unit: 'Thùng' }] },
+    { code: 'OMS-1255', customerName: 'Bách Hóa Xanh', status: 'shipped', amount: 7200000, items: [{ name: 'Bánh mì', qty: 200, price: 36000, unit: 'Gói' }] },
+    { code: 'OMS-1256', customerName: 'Mini Stop Q.1', status: 'pending', amount: 3800000, items: [{ name: 'Nước ngọt', qty: 50, price: 76000, unit: 'Thùng' }] },
+  ];
+  for (const o of soData) {
+    const existing = await prisma.salesOrder.findUnique({ where: { code: o.code } });
+    if (!existing) {
+      await prisma.salesOrder.create({
+        data: {
+          code: o.code, customerId: customers[o.customerName], totalAmount: o.amount, status: o.status,
+          items: {
+            create: o.items.map(i => ({ itemName: i.name, quantity: i.qty, unit: i.unit, unitPrice: i.price, totalPrice: i.qty * i.price }))
+          }
+        }
+      });
+    }
+  }
+  console.log(`  ✅ ${soData.length} sales orders created`);
+
+  console.log('\n🎯 Tạo Leads...');
+  const leadsData = [
+    { name: 'Nguyễn Văn A', company: 'Công ty ABC', phone: '0900111222', status: 'new', value: 5000000, priority: 'high' },
+    { name: 'Trần Thị B', company: 'Cửa hàng tiện lợi Z', phone: '0900222333', status: 'contacted', value: 12000000, priority: 'medium' },
+  ];
+  for (const l of leadsData) {
+    const existing = await prisma.lead.findFirst({ where: { phone: l.phone } });
+    if (!existing) {
+      await prisma.lead.create({ data: { name: l.name, company: l.company, phone: l.phone, status: l.status, value: l.value, priority: l.priority } });
+    }
+  }
+  console.log(`  ✅ ${leadsData.length} leads created`);
+
+  console.log('\n🚚 Tạo Drivers & Shipments...');
+  const driversData = [
+    { name: 'Nguyễn Hoàng Long', phone: '0912-345-678', vehicle: 'Xe tải 1.5T', plate: '51A-12345', status: 'on_route' },
+    { name: 'Trần Đức Mạnh', phone: '0923-456-789', vehicle: 'Xe tải 2T', plate: '60C-67890', status: 'available' },
+  ];
+  const driversObj: Record<string, string> = {};
+  for (const d of driversData) {
+    const existing = await prisma.driver.findFirst({ where: { name: d.name } });
+    if (existing) { driversObj[d.name] = existing.id; } else {
+      const cr = await prisma.driver.create({ data: { name: d.name, phone: d.phone, vehicle: d.vehicle, licensePlate: d.plate, status: d.status } });
+      driversObj[d.name] = cr.id;
+    }
+  }
+
+  const so1 = await prisma.salesOrder.findUnique({ where: { code: 'OMS-1254' } });
+  const so2 = await prisma.salesOrder.findUnique({ where: { code: 'OMS-1255' } });
+  const shipData = [
+    { code: 'SHP-001', soId: so1?.id, cust: 'Siêu thị CoopMart', addr: '242 Lê Hồng Phong', drv: 'Nguyễn Hoàng Long', items: 15, status: 'in_transit' },
+    { code: 'SHP-002', soId: so2?.id, cust: 'Bách Hóa Xanh', addr: '45 Đại lộ Bình Dương', drv: 'Trần Đức Mạnh', items: 8, status: 'picked_up' },
+  ];
+  for (const s of shipData) {
+    const existing = await prisma.shipment.findUnique({ where: { code: s.code } });
+    if (!existing) {
+      await prisma.shipment.create({
+        data: {
+          code: s.code, salesOrderId: s.soId, customerName: s.cust, address: s.addr, itemsCount: s.items, status: s.status, driverId: driversObj[s.drv]
+        }
+      });
+    }
+  }
+  console.log(`  ✅ Drivers and Shipments created\n`);
+
   // ━━━ SUMMARY ━━━
   console.log('═══════════════════════════════════════');
   console.log('🎉 Khởi tạo dữ liệu hoàn tất!');
   console.log('═══════════════════════════════════════');
   console.log(`  📦 Modules:     ${Object.keys(modules).length}`);
-  console.log(`  🔐 Roles:       ${Object.keys(roles).length}`);
-  console.log(`  🏢 Departments: ${Object.keys(depts).length}`);
   console.log(`  👤 Users:       ${Object.keys(users).length}`);
-  console.log(`  🧑‍💼 Employees:  ${employeesData.length}`);
-  console.log(`  🏭 Suppliers:   ${Object.keys(suppliers).length}`);
   console.log(`  🛒 POs:         ${poData.length}`);
-  console.log(`  🏭 Warehouses:  ${Object.keys(wmsLocations).length}`);
-  console.log('\n📋 Tài khoản đăng nhập:');
-  console.log('  admin@aio.ms    / admin123  → Super Admin');
-  console.log('  giamdoc@aio.ms  / 123456   → Admin');
-  console.log('  nhansu@aio.ms   / 123456   → Foundation Exec');
-  console.log('  kho@aio.ms      / 123456   → Operations Exec');
-  console.log('  kinhdoanh@aio.ms/ 123456   → Market Exec');
-  console.log('  ketoan@aio.ms   / 123456   → Finance Exec');
-  console.log('  nhanvien@aio.ms / 123456   → Operations View + Market View (multi-role)');
-  console.log('  thuctap@aio.ms  / 123456   → Foundation View');
+  console.log(`  🤝 Customers:   ${customersData.length}`);
+  console.log(`  📈 SalesOrders: ${soData.length}`);
+  console.log('\n📋 Tài khoản đăng nhập đã sẵn sàng!');
 }
 
 main()

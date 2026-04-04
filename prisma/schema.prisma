@@ -281,3 +281,116 @@ model StockMovement {
   @@index([type])
   @@map("stock_movements")
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// OMS, SMS & TMS — Market & Operations Expansion
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  type      String   @default("B2B") // B2B, B2C
+  tier      String?  @default("standard")
+  rating    Float?   @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  salesOrders SalesOrder[]
+
+  @@map("customers")
+}
+
+model SalesOrder {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  customerId      String
+  customer        Customer @relation(fields: [customerId], references: [id])
+  totalAmount     Float    @default(0)
+  status          String   @default("pending") // pending, confirmed, processing, shipped, delivered, cancelled
+  channel         String?
+  expectedDelivery DateTime?
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           SalesOrderItem[]
+  shipments       Shipment[]
+
+  @@index([customerId])
+  @@index([status])
+  @@map("sales_orders")
+}
+
+model SalesOrderItem {
+  id           String     @id @default(cuid())
+  salesOrderId String
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  itemName     String
+  quantity     Float
+  unit         String
+  unitPrice    Float
+  totalPrice   Float
+
+  @@index([salesOrderId])
+  @@map("sales_order_items")
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  company   String?
+  phone     String?
+  email     String?
+  status    String   @default("new") // new, contacted, qualified, proposal, won, lost
+  value     Float    @default(0)
+  priority  String   @default("medium") // high, medium, low
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@map("leads")
+}
+
+model Driver {
+  id              String   @id @default(cuid())
+  name            String
+  phone           String?
+  vehicle         String?
+  licensePlate    String?
+  activeShipments Int      @default(0)
+  completedToday  Int      @default(0)
+  status          String   @default("available") // available, on_route, off_duty
+  rating          Float?   @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  shipments       Shipment[]
+
+  @@map("drivers")
+}
+
+model Shipment {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  salesOrderId    String?
+  salesOrder      SalesOrder? @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+  customerName    String
+  address         String
+  driverId        String?
+  driver          Driver?  @relation(fields: [driverId], references: [id])
+  itemsCount      Int      @default(1)
+  weight          String?
+  status          String   @default("pending") // pending, picked_up, in_transit, delivered, failed
+  currentLocation String?
+  estimatedDelivery DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([salesOrderId])
+  @@index([driverId])
+  @@index([status])
+  @@map("shipments")
+}

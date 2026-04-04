@@ -25,10 +25,28 @@ const STATUS: Record<string, { label: string; variant: 'default' | 'info' | 'war
 export default function OMSPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const [selected, setSelected] = useState<(typeof ORDERS)[0] | null>(null);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selected, setSelected] = useState<any | null>(null);
+
+  React.useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch('/api/sales-orders');
+        const json = await res.json();
+        if (json.success) setOrders(json.data);
+      } catch (err) {
+        console.error('Error fetching orders:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
+
   const fmt = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
-  const filtered = ORDERS.filter(o => (filter === 'all' || o.status === filter) && (o.code.toLowerCase().includes(search.toLowerCase()) || o.customer.toLowerCase().includes(search.toLowerCase())));
-  const totalValue = ORDERS.filter(o => o.status !== 'cancelled').reduce((s, o) => s + o.total, 0);
+  const filtered = orders.filter(o => (filter === 'all' || o.status === filter) && (o.code.toLowerCase().includes(search.toLowerCase()) || o.customerName.toLowerCase().includes(search.toLowerCase())));
+  const totalValue = orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (o.totalAmount || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -46,9 +64,9 @@ export default function OMSPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-        <StatCard title="Tổng đơn" value={ORDERS.length} icon={ClipboardList} color="var(--primary-500)" />
-        <StatCard title="Đang xử lý" value={ORDERS.filter(o => ['pending', 'confirmed', 'processing'].includes(o.status)).length} icon={Clock} color="var(--amber)" />
-        <StatCard title="Đã giao" value={ORDERS.filter(o => o.status === 'delivered').length} icon={CheckCircle} color="var(--emerald)" />
+        <StatCard title="Tổng đơn" value={orders.length} icon={ClipboardList} color="var(--primary-500)" />
+        <StatCard title="Đang xử lý" value={orders.filter(o => ['pending', 'confirmed', 'processing'].includes(o.status)).length} icon={Clock} color="var(--amber)" />
+        <StatCard title="Đã giao" value={orders.filter(o => o.status === 'delivered').length} icon={CheckCircle} color="var(--emerald)" />
         <StatCard title="Tổng giá trị" value={fmt(totalValue)} icon={DollarSign} color="var(--accent-500)" />
       </div>
 
@@ -64,41 +82,86 @@ export default function OMSPage() {
       </div>
 
       <Card padding="none" className="animate-fade-in">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead><tr style={{ background: 'var(--slate-50)' }}>
-              {['Mã đơn', 'Khách hàng', 'Mặt hàng', 'Giá trị', 'Kênh', 'Trạng thái', 'Ngày tạo', 'Giao hàng'].map((h, i) => (
-                <th key={i} className="text-left text-xs font-semibold uppercase tracking-wider px-5 py-3" style={{ color: 'var(--text-muted)' }}>{h}</th>
-              ))}
-            </tr></thead>
-            <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+        {isLoading ? (
+          <div className="p-8 flex flex-col items-center justify-center gap-4 animate-pulse">
+            <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-[var(--primary-400)] animate-spin" />
+            <p className="text-sm text-[var(--text-muted)]">Đang tải đơn hàng...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-12 flex flex-col items-center justify-center">
+            <ClipboardList size={40} className="mb-4 text-[var(--text-muted)] opacity-50" />
+            <p className="text-[var(--text-secondary)] font-medium">Không tìm thấy đơn hàng</p>
+          </div>
+        ) : (
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead><tr style={{ background: 'var(--slate-50)' }}>
+                  {['Mã đơn', 'Khách hàng', 'Mặt hàng', 'Giá trị', 'Kênh', 'Trạng thái', 'Ngày tạo', 'Giao hàng'].map((h, i) => (
+                    <th key={i} className="text-left text-xs font-semibold uppercase tracking-wider px-5 py-3" style={{ color: 'var(--text-muted)' }}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+                  {filtered.map(o => {
+                    const st = STATUS[o.status] || STATUS.pending; const StIcon = st.icon;
+                    return (
+                      <tr key={o.id} className="group hover:bg-[var(--slate-25)] transition-colors cursor-pointer" onClick={() => setSelected(o)}>
+                        <td className="px-5 py-3.5 text-sm font-semibold" style={{ color: 'var(--primary-500)' }}>{o.code}</td>
+                        <td className="px-5 py-3.5 text-sm font-medium">{o.customerName}</td>
+                        <td className="px-5 py-3.5 text-sm text-center">{o.itemsCount}</td>
+                        <td className="px-5 py-3.5 text-sm font-semibold">{fmt(o.totalAmount)}</td>
+                        <td className="px-5 py-3.5"><Badge>{o.channel || 'B2B'}</Badge></td>
+                        <td className="px-5 py-3.5"><Badge variant={st.variant} icon={StIcon}>{st.label}</Badge></td>
+                        <td className="px-5 py-3.5 text-sm" style={{ color: 'var(--text-secondary)' }}>{new Date(o.createdAt).toLocaleDateString('vi-VN')}</td>
+                        <td className="px-5 py-3.5 text-sm" style={{ color: 'var(--text-secondary)' }}>{o.expectedDelivery ? new Date(o.expectedDelivery).toLocaleDateString('vi-VN') : '—'}</td>
+                      </tr>);
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile Card View */}
+            <div className="md:hidden flex flex-col divide-y divide-[var(--border-color)]">
               {filtered.map(o => {
-                const st = STATUS[o.status]; const StIcon = st.icon;
+                const st = STATUS[o.status] || STATUS.pending; const StIcon = st.icon;
                 return (
-                  <tr key={o.id} className="group hover:bg-[var(--slate-25)] transition-colors cursor-pointer" onClick={() => setSelected(o)}>
-                    <td className="px-5 py-3.5 text-sm font-semibold" style={{ color: 'var(--primary-500)' }}>{o.code}</td>
-                    <td className="px-5 py-3.5 text-sm font-medium">{o.customer}</td>
-                    <td className="px-5 py-3.5 text-sm text-center">{o.items}</td>
-                    <td className="px-5 py-3.5 text-sm font-semibold">{fmt(o.total)}</td>
-                    <td className="px-5 py-3.5"><Badge>{o.channel}</Badge></td>
-                    <td className="px-5 py-3.5"><Badge variant={st.variant} icon={StIcon}>{st.label}</Badge></td>
-                    <td className="px-5 py-3.5 text-sm" style={{ color: 'var(--text-secondary)' }}>{new Date(o.date).toLocaleDateString('vi-VN')}</td>
-                    <td className="px-5 py-3.5 text-sm" style={{ color: 'var(--text-secondary)' }}>{o.delivery !== '—' ? new Date(o.delivery).toLocaleDateString('vi-VN') : '—'}</td>
-                  </tr>);
+                  <div key={o.id} className="p-4 flex flex-col gap-3 active:bg-[var(--slate-50)] transition-colors cursor-pointer" onClick={() => setSelected(o)}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-sm" style={{ background: `var(--slate-100)`, color: 'var(--primary-500)' }}>
+                          <ClipboardList size={18} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-[var(--primary-600)]">{o.code}</p>
+                          <p className="text-xs text-[var(--text-secondary)] line-clamp-1">{o.customerName}</p>
+                        </div>
+                      </div>
+                      <Badge variant={st.variant}>{st.label}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs mt-1">
+                      <div className="flex flex-col gap-1 text-[var(--text-muted)]">
+                        <span>MH: <strong className="text-[var(--text-primary)]">{o.itemsCount}</strong></span>
+                        <span>Ngày tạo: {new Date(o.createdAt).toLocaleDateString('vi-VN')}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-sm text-[var(--text-primary)]">{fmt(o.totalAmount)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
               })}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-5 py-3 border-t text-xs" style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>Hiển thị {filtered.length} / {ORDERS.length} đơn hàng</div>
+            </div>
+          </>
+        )}
+        <div className="px-5 py-3 border-t text-xs" style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>Hiển thị {filtered.length} / {orders.length} đơn hàng</div>
       </Card>
 
-      <Modal isOpen={!!selected} onClose={() => setSelected(null)} title={selected?.code || ''} description={selected?.customer}
+      <Modal isOpen={!!selected} onClose={() => setSelected(null)} title={selected?.code || ''} description={selected?.customerName}
         footer={<Button variant="ghost" onClick={() => setSelected(null)}>Đóng</Button>}>
         {selected && (
           <div className="grid grid-cols-2 gap-3">
-            {[{ l: 'Trạng thái', v: STATUS[selected.status].label }, { l: 'Kênh bán', v: selected.channel },
-              { l: 'Số mặt hàng', v: `${selected.items} SP` }, { l: 'Tổng giá trị', v: fmt(selected.total) },
-              { l: 'Ngày tạo', v: new Date(selected.date).toLocaleDateString('vi-VN') }, { l: 'Ngày giao', v: selected.delivery !== '—' ? new Date(selected.delivery).toLocaleDateString('vi-VN') : '—' },
+            {[{ l: 'Trạng thái', v: STATUS[selected.status]?.label || selected.status }, { l: 'Kênh bán', v: selected.channel || 'B2B' },
+              { l: 'Số mặt hàng', v: `${selected.itemsCount} SP` }, { l: 'Tổng giá trị', v: fmt(selected.totalAmount) },
+              { l: 'Ngày tạo', v: new Date(selected.createdAt).toLocaleDateString('vi-VN') }, { l: 'Ngày giao', v: selected.expectedDelivery ? new Date(selected.expectedDelivery).toLocaleDateString('vi-VN') : '—' },
             ].map(f => (<div key={f.l} className="p-3 rounded-xl" style={{ background: 'var(--slate-50)' }}><p className="text-xs" style={{ color: 'var(--text-muted)' }}>{f.l}</p><p className="text-sm font-semibold mt-1">{f.v}</p></div>))}
           </div>
         )}

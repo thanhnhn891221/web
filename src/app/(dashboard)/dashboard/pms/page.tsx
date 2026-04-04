@@ -46,14 +46,6 @@ const SUPPLIERS: Supplier[] = [
   { id: '5', name: 'Xưởng Nhựa Tân Phú', code: 'NCC-005', contact: 'Hoàng Thị Lan', email: 'lan@ntp.vn', phone: '028-9876-5432', category: 'Nhựa', rating: 3.9, totalOrders: 42, status: 'inactive' },
 ];
 
-const PURCHASE_ORDERS: PurchaseOrder[] = [
-  { id: '1', code: 'PO-2026-001', supplierId: '1', supplierName: 'Công ty TNHH Nguyên liệu Sài Gòn', items: [{ name: 'Bột mì cao cấp', qty: 500, unit: 'kg', price: 18000 }, { name: 'Đường tinh luyện', qty: 300, unit: 'kg', price: 22000 }], totalAmount: 15600000, status: 'approved', createdBy: 'Admin', createdAt: '2026-03-28', expectedDate: '2026-04-05', note: 'Đơn gấp cho dây chuyền SX #2' },
-  { id: '2', code: 'PO-2026-002', supplierId: '2', supplierName: 'Nhà máy Bao bì Đồng Nai', items: [{ name: 'Hộp carton 30x20x15', qty: 2000, unit: 'cái', price: 5500 }], totalAmount: 11000000, status: 'ordered', createdBy: 'Phạm Đức Anh', createdAt: '2026-03-29', expectedDate: '2026-04-03' },
-  { id: '3', code: 'PO-2026-003', supplierId: '3', supplierName: 'Đại lý Hóa chất Miền Nam', items: [{ name: 'Chất tẩy rửa công nghiệp', qty: 50, unit: 'thùng', price: 450000 }], totalAmount: 22500000, status: 'pending', createdBy: 'Admin', createdAt: '2026-03-30', expectedDate: '2026-04-10' },
-  { id: '4', code: 'PO-2026-004', supplierId: '1', supplierName: 'Công ty TNHH Nguyên liệu Sài Gòn', items: [{ name: 'Tinh bột ngô', qty: 200, unit: 'kg', price: 15000 }, { name: 'Phụ gia thực phẩm E330', qty: 100, unit: 'kg', price: 85000 }], totalAmount: 11500000, status: 'received', createdBy: 'Trần Minh Tuấn', createdAt: '2026-03-15', expectedDate: '2026-03-25' },
-  { id: '5', code: 'PO-2026-005', supplierId: '4', supplierName: 'Công ty CP Máy móc Á Châu', items: [{ name: 'Băng tải mini 2m', qty: 1, unit: 'chiếc', price: 45000000 }], totalAmount: 45000000, status: 'draft', createdBy: 'Admin', createdAt: '2026-03-31', expectedDate: '2026-04-20' },
-];
-
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info'; icon: React.ElementType }> = {
   draft: { label: 'Nháp', variant: 'default', icon: FileText },
   pending: { label: 'Chờ duyệt', variant: 'warning', icon: Clock },
@@ -69,18 +61,35 @@ export default function PMSPage() {
   const [activeTab, setActiveTab] = useState<Tab>('orders');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [isCreateModal, setIsCreateModal] = useState(false);
 
-  const filteredOrders = PURCHASE_ORDERS.filter((po) => {
+  React.useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch('/api/purchase-orders');
+        const json = await res.json();
+        if (json.success) setOrders(json.data);
+      } catch (error) {
+        console.error('Failed to load POs', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
+
+  const filteredOrders = orders.filter((po) => {
     const matchSearch = po.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       po.supplierName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchStatus = statusFilter === 'all' || po.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
-  const totalPending = PURCHASE_ORDERS.filter(po => po.status === 'pending').length;
-  const totalValue = PURCHASE_ORDERS.reduce((sum, po) => sum + po.totalAmount, 0);
+  const totalPending = orders.filter(po => po.status === 'pending').length;
+  const totalValue = orders.reduce((sum, po) => sum + po.totalAmount, 0);
 
   const formatCurrency = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 
@@ -102,7 +111,7 @@ export default function PMSPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-        <StatCard title="Tổng đơn mua" value={PURCHASE_ORDERS.length} icon={FileText} color="var(--primary-500)" />
+        <StatCard title="Tổng đơn mua" value={orders.length} icon={FileText} color="var(--primary-500)" />
         <StatCard title="Chờ duyệt" value={totalPending} icon={Clock} color="var(--amber)" changeLabel="Cần xử lý" />
         <StatCard title="Nhà cung cấp" value={SUPPLIERS.filter(s => s.status === 'active').length} icon={Building2} color="var(--accent-500)" changeLabel="Đang hợp tác" />
         <StatCard title="Tổng giá trị" value={formatCurrency(totalValue)} icon={DollarSign} color="var(--emerald)" />
@@ -140,45 +149,94 @@ export default function PMSPage() {
           </div>
 
           <Card padding="none">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr style={{ background: 'var(--slate-50)' }}>
-                    {['Mã đơn', 'Nhà cung cấp', 'Số mặt hàng', 'Tổng giá trị', 'Trạng thái', 'Ngày tạo', 'Dự kiến nhận', ''].map((h, i) => (
-                      <th key={i} className={`${i === 7 ? 'text-right' : 'text-left'} text-xs font-semibold uppercase tracking-wider px-5 py-3`} style={{ color: 'var(--text-muted)' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+            {isLoading ? (
+              <div className="p-8 flex flex-col items-center justify-center gap-4 animate-pulse">
+                <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-[var(--primary-400)] animate-spin" />
+                <p className="text-sm text-[var(--text-muted)]">Đang tải đơn mua hàng...</p>
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="p-12 flex flex-col items-center justify-center">
+                <FileText size={40} className="mb-4 text-[var(--text-muted)] opacity-50" />
+                <p className="text-[var(--text-secondary)] font-medium">Không tìm thấy đơn hàng</p>
+              </div>
+            ) : (
+              <>
+                {/* ─── Desktop Table View ─── */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr style={{ background: 'var(--slate-50)' }}>
+                        {['Mã đơn', 'Nhà cung cấp', 'Số mặt hàng', 'Tổng giá trị', 'Trạng thái', 'Ngày tạo', 'Dự kiến nhận', ''].map((h, i) => (
+                          <th key={i} className={`${i === 7 ? 'text-right' : 'text-left'} text-xs font-semibold uppercase tracking-wider px-5 py-3`} style={{ color: 'var(--text-muted)' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+                      {filteredOrders.map((po) => {
+                        const status = STATUS_CONFIG[po.status] || STATUS_CONFIG.draft;
+                        const StatusIcon = status.icon;
+                        return (
+                          <tr key={po.id} className="group hover:bg-[var(--slate-25)] transition-colors duration-150 cursor-pointer" onClick={() => setSelectedOrder(po)}>
+                            <td className="px-5 py-3.5">
+                              <span className="text-sm font-semibold" style={{ color: 'var(--primary-500)' }}>{po.code}</span>
+                            </td>
+                            <td className="px-5 py-3.5 text-sm">{po.supplierName}</td>
+                            <td className="px-5 py-3.5 text-sm text-center">{po.items.length}</td>
+                            <td className="px-5 py-3.5 text-sm font-semibold text-right">{formatCurrency(po.totalAmount)}</td>
+                            <td className="px-5 py-3.5">
+                              <Badge variant={status.variant} icon={StatusIcon}>{status.label}</Badge>
+                            </td>
+                            <td className="px-5 py-3.5 text-sm" style={{ color: 'var(--text-secondary)' }}>{po.createdAt}</td>
+                            <td className="px-5 py-3.5 text-sm" style={{ color: 'var(--text-secondary)' }}>{po.expectedDate}</td>
+                            <td className="px-5 py-3.5 text-right">
+                              <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                <button className="p-1.5 rounded-lg hover:bg-[var(--slate-100)] transition-colors" title="Chỉnh sửa"><Edit size={14} style={{ color: 'var(--primary-500)' }} /></button>
+                                <button className="p-1.5 rounded-lg hover:bg-[var(--slate-100)] transition-colors" title="Tùy chọn khác"><MoreHorizontal size={14} style={{ color: 'var(--text-muted)' }} /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* ─── Mobile Card View ─── */}
+                <div className="md:hidden flex flex-col divide-y divide-[var(--border-color)]">
                   {filteredOrders.map((po) => {
-                    const status = STATUS_CONFIG[po.status];
+                    const status = STATUS_CONFIG[po.status] || STATUS_CONFIG.draft;
                     const StatusIcon = status.icon;
                     return (
-                      <tr key={po.id} className="group hover:bg-[var(--slate-25)] transition-colors duration-150 cursor-pointer" onClick={() => setSelectedOrder(po)}>
-                        <td className="px-5 py-3.5">
-                          <span className="text-sm font-semibold" style={{ color: 'var(--primary-500)' }}>{po.code}</span>
-                        </td>
-                        <td className="px-5 py-3.5 text-sm">{po.supplierName}</td>
-                        <td className="px-5 py-3.5 text-sm text-center">{po.items.length}</td>
-                        <td className="px-5 py-3.5 text-sm font-semibold text-right">{formatCurrency(po.totalAmount)}</td>
-                        <td className="px-5 py-3.5">
-                          <Badge variant={status.variant} icon={StatusIcon}>{status.label}</Badge>
-                        </td>
-                        <td className="px-5 py-3.5 text-sm" style={{ color: 'var(--text-secondary)' }}>{new Date(po.createdAt).toLocaleDateString('vi-VN')}</td>
-                        <td className="px-5 py-3.5 text-sm" style={{ color: 'var(--text-secondary)' }}>{new Date(po.expectedDate).toLocaleDateString('vi-VN')}</td>
-                        <td className="px-5 py-3.5 text-right">
-                          <button className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-[var(--slate-100)] transition-all">
-                            <MoreHorizontal size={16} style={{ color: 'var(--text-muted)' }} />
-                          </button>
-                        </td>
-                      </tr>
+                      <div key={po.id} className="p-4 flex flex-col gap-3 active:bg-[var(--slate-50)] transition-colors cursor-pointer" onClick={() => setSelectedOrder(po)}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm" style={{ background: `var(--slate-100)`, color: 'var(--primary-500)' }}>
+                              <ShoppingCart size={18} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-[var(--primary-600)]">{po.code}</p>
+                              <p className="text-xs text-[var(--text-secondary)] line-clamp-1">{po.supplierName}</p>
+                            </div>
+                          </div>
+                          <Badge variant={status.variant}>{status.label}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-xs mt-1">
+                          <div className="flex flex-col gap-1 text-[var(--text-muted)]">
+                            <span>Mặt hàng: <strong className="text-[var(--text-primary)]">{po.items.length}</strong></span>
+                            <span>Dự kiến: <span className="text-[var(--text-primary)]">{po.expectedDate}</span></span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold text-sm text-[var(--text-primary)]">{formatCurrency(po.totalAmount)}</span>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-            <div className="px-5 py-3 border-t text-xs" style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
-              Hiển thị {filteredOrders.length} / {PURCHASE_ORDERS.length} đơn mua hàng
+                </div>
+              </>
+            )}
+            <div className="flex items-center justify-between px-5 py-3 border-t text-xs" style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
+              Hiển thị {filteredOrders.length} / {orders.length} đơn
             </div>
           </Card>
         </div>

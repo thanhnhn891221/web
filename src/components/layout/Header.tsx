@@ -74,14 +74,14 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
     const parts = pathname.split('/').filter(Boolean);
     if (parts.length <= 1) return [{ label: 'Tổng quan' }];
 
-    const items: { label: string; href?: string }[] = [
+    const items: { label: string; href?: string; labelExt?: string }[] = [
       { label: 'Tổng quan', href: '/dashboard' },
     ];
 
     const moduleCode = parts[1]?.toUpperCase();
     const mod = MODULES.find((m) => m.code === moduleCode);
     if (mod) {
-      items.push({ label: `${mod.code} — ${mod.nameVi}` });
+      items.push({ label: mod.code, labelExt: ` — ${mod.nameVi}` });
     } else if (parts[1]) {
       items.push({ label: parts[1].charAt(0).toUpperCase() + parts[1].slice(1) });
     }
@@ -126,10 +126,11 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
                   ${i === breadcrumb.length - 1
                     ? 'font-semibold text-[var(--text-primary)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer transition-colors'
-                  }
+                  } text-sm whitespace-nowrap
                 `}
               >
                 {item.label}
+                {item.labelExt && <span className="hidden sm:inline">{item.labelExt}</span>}
               </span>
             </React.Fragment>
           ))}

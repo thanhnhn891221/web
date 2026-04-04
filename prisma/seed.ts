@@ -252,6 +252,116 @@ async function main() {
   }
   console.log(`  ✅ ${employeesData.length} employees created\n`);
 
+  // ━━━ 7. TẠO SUPPLIERS (PMS) ━━━
+  console.log('🏭 Tạo Suppliers...');
+  const suppliersData = [
+    { code: 'NCC-001', name: 'Công ty TNHH Nguyên liệu Sài Gòn', contact: 'Nguyễn Văn Bình', email: 'binh@nlsg.vn', phone: '028-1234-5678', category: 'Nguyên vật liệu', rating: 4.8, status: 'active' },
+    { code: 'NCC-002', name: 'Nhà máy Bao bì Đồng Nai', contact: 'Trần Thị Cúc', email: 'cuc@bbdn.vn', phone: '0251-234-5678', category: 'Bao bì', rating: 4.5, status: 'active' },
+    { code: 'NCC-003', name: 'Đại lý Hóa chất Miền Nam', contact: 'Lê Hoàng Duy', email: 'duy@hcmn.vn', phone: '028-8765-4321', category: 'Hóa chất', rating: 4.2, status: 'active' },
+    { code: 'NCC-004', name: 'Công ty CP Máy móc Á Châu', contact: 'Phạm Minh Đức', email: 'duc@mmac.vn', phone: '024-5678-1234', category: 'Máy móc', rating: 4.6, status: 'active' },
+    { code: 'NCC-005', name: 'Xưởng Nhựa Tân Phú', contact: 'Hoàng Thị Lan', email: 'lan@ntp.vn', phone: '028-9876-5432', category: 'Nhựa', rating: 3.9, status: 'inactive' },
+  ];
+
+  const suppliers: Record<string, string> = {};
+  for (const s of suppliersData) {
+    const sup = await prisma.supplier.upsert({
+      where: { code: s.code },
+      update: s,
+      create: s,
+    });
+    suppliers[s.code] = sup.id;
+  }
+  console.log(`  ✅ ${Object.keys(suppliers).length} suppliers created\n`);
+
+  // ━━━ 8. TẠO PURCHASE ORDERS (PMS) ━━━
+  console.log('🛒 Tạo Purchase Orders...');
+  const poData = [
+    { code: 'PO-2026-001', supplierCode: 'NCC-001', expectedDate: new Date('2026-04-05'), status: 'approved', note: 'Đơn gấp cho dây chuyền SX #2', createdByEmail: 'admin@aio.ms', 
+      items: [{ name: 'Bột mì cao cấp', qty: 500, unit: 'kg', price: 18000 }, { name: 'Đường tinh luyện', qty: 300, unit: 'kg', price: 22000 }] },
+    { code: 'PO-2026-002', supplierCode: 'NCC-002', expectedDate: new Date('2026-04-03'), status: 'ordered', createdByEmail: 'kho@aio.ms', 
+      items: [{ name: 'Hộp carton 30x20x15', qty: 2000, unit: 'cái', price: 5500 }] },
+    { code: 'PO-2026-003', supplierCode: 'NCC-003', expectedDate: new Date('2026-04-10'), status: 'pending', createdByEmail: 'admin@aio.ms', 
+      items: [{ name: 'Chất tẩy rửa công nghiệp', qty: 50, unit: 'thùng', price: 450000 }] },
+  ];
+
+  for (const po of poData) {
+    const total = po.items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+    const order = await prisma.purchaseOrder.upsert({
+      where: { code: po.code },
+      update: { totalAmount: total, status: po.status },
+      create: { 
+        code: po.code, supplierId: suppliers[po.supplierCode], totalAmount: total, status: po.status, 
+        expectedDate: po.expectedDate, note: po.note, createdById: users[po.createdByEmail] 
+      },
+    });
+
+    for (const item of po.items) {
+      // Very naive check to prevent duplicate inserts on re-seed, ideally delete many and insert
+      const existingItem = await prisma.purchaseOrderItem.findFirst({ where: { purchaseOrderId: order.id, itemName: item.name } });
+      if (!existingItem) {
+        await prisma.purchaseOrderItem.create({
+          data: {
+            purchaseOrderId: order.id, itemName: item.name, quantity: item.qty, unit: item.unit, unitPrice: item.price, totalPrice: item.qty * item.price
+          }
+        });
+      }
+    }
+  }
+  console.log(`  ✅ ${poData.length} purchase orders created\n`);
+
+  // ━━━ 9. TẠO WAREHOUSES & INVENTORY (WMS) ━━━
+  console.log('🏭 Tạo Warehouses & Inventory...');
+  const warehousesData = [
+    { code: 'KHO-BD', name: 'Kho Trung tâm Bình Dương', address: 'KCN Mỹ Phước 3, Bình Dương', capacity: 5000, usedCapacity: 3750, managerEmail: 'kho@aio.ms', status: 'active' },
+    { code: 'KHO-HCM', name: 'Kho Chi nhánh TP.HCM', address: 'Q.Thủ Đức, TP.HCM', capacity: 2000, usedCapacity: 1680, status: 'active' },
+    { code: 'KHO-DN', name: 'Kho Nguyên liệu Đồng Nai', address: 'KCN Amata, Đồng Nai', capacity: 3000, usedCapacity: 2100, status: 'active' },
+  ];
+
+  const wmsLocations: Record<string, string> = {};
+  for (const w of warehousesData) {
+    const wh = await prisma.warehouse.upsert({
+      where: { code: w.code },
+      update: { capacity: w.capacity, usedCapacity: w.usedCapacity },
+      create: { code: w.code, name: w.name, address: w.address, capacity: w.capacity, usedCapacity: w.usedCapacity, managerId: w.managerEmail ? users[w.managerEmail] : null, status: w.status },
+    });
+    wmsLocations[w.code] = wh.id;
+  }
+
+  const inventoryData = [
+    { sku: 'NVL-001', name: 'Bột mì cao cấp', category: 'Nguyên vật liệu', whCode: 'KHO-DN', zone: 'A1', quantity: 2500, minStock: 500, unit: 'kg', status: 'in_stock' },
+    { sku: 'NVL-002', name: 'Đường tinh luyện', category: 'Nguyên vật liệu', whCode: 'KHO-DN', zone: 'A2', quantity: 180, minStock: 200, unit: 'kg', status: 'low_stock' },
+    { sku: 'BB-001', name: 'Hộp carton 30x20x15', category: 'Bao bì', whCode: 'KHO-BD', zone: 'B1', quantity: 8500, minStock: 1000, unit: 'cái', status: 'in_stock' },
+    { sku: 'TP-001', name: 'Bánh quy vị bơ 200g', category: 'Thành phẩm', whCode: 'KHO-BD', zone: 'C1', quantity: 12000, minStock: 2000, unit: 'hộp', status: 'in_stock' },
+  ];
+
+  for (const inv of inventoryData) {
+    await prisma.inventoryItem.upsert({
+      where: { sku: inv.sku },
+      update: { quantity: inv.quantity, status: inv.status },
+      create: { sku: inv.sku, name: inv.name, category: inv.category, warehouseId: wmsLocations[inv.whCode], zone: inv.zone, quantity: inv.quantity, minStock: inv.minStock, unit: inv.unit, status: inv.status },
+    });
+  }
+
+  const movementsData = [
+    { type: 'in', itemName: 'Bột mì cao cấp', sku: 'NVL-001', quantity: 500, unit: 'kg', toWhCode: 'KHO-DN', reason: 'Nhập từ PO-2026-001', refCode: 'PO-2026-001', createdByEmail: 'admin@aio.ms' },
+    { type: 'out', itemName: 'Bánh quy vị bơ 200g', sku: 'TP-001', quantity: 2000, unit: 'hộp', fromWhCode: 'KHO-BD', reason: 'Xuất cho đơn hàng OMS-1254', refCode: 'OMS-1254', createdByEmail: 'kho@aio.ms' },
+  ];
+
+  for (const mov of movementsData) {
+    const existingMov = await prisma.stockMovement.findFirst({ where: { refCode: mov.refCode, type: mov.type } });
+    if (!existingMov) {
+      await prisma.stockMovement.create({
+        data: {
+          type: mov.type, itemName: mov.itemName, sku: mov.sku, quantity: mov.quantity, unit: mov.unit,
+          fromWarehouseId: mov.fromWhCode ? wmsLocations[mov.fromWhCode] : null,
+          toWarehouseId: mov.toWhCode ? wmsLocations[mov.toWhCode] : null,
+          reason: mov.reason, refCode: mov.refCode, createdById: users[mov.createdByEmail]
+        }
+      });
+    }
+  }
+  console.log(`  ✅ Warehouses and Inventory created\n`);
+
   // ━━━ SUMMARY ━━━
   console.log('═══════════════════════════════════════');
   console.log('🎉 Khởi tạo dữ liệu hoàn tất!');
@@ -261,6 +371,9 @@ async function main() {
   console.log(`  🏢 Departments: ${Object.keys(depts).length}`);
   console.log(`  👤 Users:       ${Object.keys(users).length}`);
   console.log(`  🧑‍💼 Employees:  ${employeesData.length}`);
+  console.log(`  🏭 Suppliers:   ${Object.keys(suppliers).length}`);
+  console.log(`  🛒 POs:         ${poData.length}`);
+  console.log(`  🏭 Warehouses:  ${Object.keys(wmsLocations).length}`);
   console.log('\n📋 Tài khoản đăng nhập:');
   console.log('  admin@aio.ms    / admin123  → Super Admin');
   console.log('  giamdoc@aio.ms  / 123456   → Admin');

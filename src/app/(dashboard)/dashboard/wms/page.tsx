@@ -95,18 +95,35 @@ export default function WMSPage() {
   const [activeTab, setActiveTab] = useState<Tab>('inventory');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
-  const categories = [...new Set(INVENTORY.map(i => i.category))];
-  const filteredInventory = INVENTORY.filter((item) => {
+  React.useEffect(() => {
+    const fetchInv = async () => {
+      try {
+        const res = await fetch('/api/inventory');
+        const json = await res.json();
+        if (json.success) setInventory(json.data);
+      } catch (err) {
+        console.error('Error fetching inventory', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchInv();
+  }, []);
+
+  const categories = [...new Set(inventory.map(i => i.category))];
+  const filteredInventory = inventory.filter((item) => {
     const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.sku.toLowerCase().includes(searchQuery.toLowerCase());
     const matchCat = categoryFilter === 'all' || item.category === categoryFilter;
     return matchSearch && matchCat;
   });
 
-  const lowStockCount = INVENTORY.filter(i => i.status === 'low_stock').length;
-  const outOfStockCount = INVENTORY.filter(i => i.status === 'out_of_stock').length;
-  const totalItems = INVENTORY.reduce((sum, i) => sum + i.quantity, 0);
+  const lowStockCount = inventory.filter(i => i.status === 'low_stock').length;
+  const outOfStockCount = inventory.filter(i => i.status === 'out_of_stock').length;
+  const totalItems = inventory.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
     <div className="space-y-6">
@@ -169,41 +186,95 @@ export default function WMSPage() {
           </div>
 
           <Card padding="none">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr style={{ background: 'var(--slate-50)' }}>
-                    {['SKU', 'Tên hàng', 'Danh mục', 'Kho', 'Vị trí', 'Tồn kho', 'Tối thiểu', 'Trạng thái'].map((h, i) => (
-                      <th key={i} className={`${i >= 5 ? 'text-right' : 'text-left'} text-xs font-semibold uppercase tracking-wider px-5 py-3`} style={{ color: 'var(--text-muted)' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
-                  {filteredInventory.map((item) => {
-                    const stockStatus = STOCK_STATUS[item.status];
-                    const stockPct = item.minStock > 0 ? Math.round((item.quantity / (item.minStock * 5)) * 100) : 100;
-                    return (
-                      <tr key={item.id} className="group hover:bg-[var(--slate-25)] transition-colors duration-150 cursor-pointer" onClick={() => setSelectedItem(item)}>
-                        <td className="px-5 py-3.5">
-                          <span className="text-sm font-mono font-semibold" style={{ color: 'var(--primary-500)' }}>{item.sku}</span>
-                        </td>
-                        <td className="px-5 py-3.5 text-sm font-medium">{item.name}</td>
-                        <td className="px-5 py-3.5"><Badge>{item.category}</Badge></td>
-                        <td className="px-5 py-3.5 text-sm">{item.warehouseName}</td>
-                        <td className="px-5 py-3.5"><Badge variant="info">{item.zone}</Badge></td>
-                        <td className="px-5 py-3.5 text-right">
-                          <span className="text-sm font-bold">{item.quantity.toLocaleString()}</span>
-                          <span className="text-xs ml-1" style={{ color: 'var(--text-muted)' }}>{item.unit}</span>
-                        </td>
-                        <td className="px-5 py-3.5 text-sm text-right" style={{ color: 'var(--text-muted)' }}>{item.minStock}</td>
-                        <td className="px-5 py-3.5 text-right">
-                          <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
-                        </td>
+            {isLoading ? (
+              <div className="p-8 flex flex-col items-center justify-center gap-4 animate-pulse">
+                <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-[var(--primary-400)] animate-spin" />
+                <p className="text-sm text-[var(--text-muted)]">Đang tải biểu tồn kho...</p>
+              </div>
+            ) : filteredInventory.length === 0 ? (
+              <div className="p-12 flex flex-col items-center justify-center">
+                <Package size={40} className="mb-4 text-[var(--text-muted)] opacity-50" />
+                <p className="text-[var(--text-secondary)] font-medium">Không tìm thấy mã hàng</p>
+              </div>
+            ) : (
+              <>
+                {/* ─── Desktop Table View ─── */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr style={{ background: 'var(--slate-50)' }}>
+                        {['SKU', 'Tên hàng', 'Danh mục', 'Kho', 'Vị trí', 'Tồn kho', 'Tối thiểu', 'Trạng thái'].map((h, i) => (
+                          <th key={i} className={`${i >= 5 ? 'text-right' : 'text-left'} text-xs font-semibold uppercase tracking-wider px-5 py-3`} style={{ color: 'var(--text-muted)' }}>{h}</th>
+                        ))}
                       </tr>
+                    </thead>
+                    <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+                      {filteredInventory.map((item) => {
+                        const stockStatus = STOCK_STATUS[item.status] || STOCK_STATUS.in_stock;
+                        return (
+                          <tr key={item.id} className="group hover:bg-[var(--slate-25)] transition-colors duration-150 cursor-pointer" onClick={() => setSelectedItem(item)}>
+                            <td className="px-5 py-3.5">
+                              <span className="text-sm font-mono font-semibold" style={{ color: 'var(--primary-500)' }}>{item.sku}</span>
+                            </td>
+                            <td className="px-5 py-3.5 text-sm font-medium">{item.name}</td>
+                            <td className="px-5 py-3.5"><Badge>{item.category}</Badge></td>
+                            <td className="px-5 py-3.5 text-sm">{item.warehouseName}</td>
+                            <td className="px-5 py-3.5"><Badge variant="info">{item.zone}</Badge></td>
+                            <td className="px-5 py-3.5 text-right">
+                              <span className="text-sm font-bold">{item.quantity.toLocaleString()}</span>
+                              <span className="text-xs ml-1" style={{ color: 'var(--text-muted)' }}>{item.unit}</span>
+                            </td>
+                            <td className="px-5 py-3.5 text-sm text-right" style={{ color: 'var(--text-muted)' }}>{item.minStock}</td>
+                            <td className="px-5 py-3.5 text-right">
+                              <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* ─── Mobile Card View ─── */}
+                <div className="md:hidden flex flex-col divide-y divide-[var(--border-color)]">
+                  {filteredInventory.map((item) => {
+                    const stockStatus = STOCK_STATUS[item.status] || STOCK_STATUS.in_stock;
+                    return (
+                      <div key={item.id} className="p-4 flex flex-col gap-3 active:bg-[var(--slate-50)] transition-colors cursor-pointer" onClick={() => setSelectedItem(item)}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm" style={{ background: `var(--slate-100)`, color: 'var(--primary-500)' }}>
+                              <Package size={18} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-[var(--text-primary)] leading-tight">{item.name}</p>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <span className="text-xs font-mono font-semibold text-[var(--primary-600)]">{item.sku}</span>
+                                <span className="text-xs text-[var(--text-muted)]">• {item.zone}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-xs mt-1">
+                          <div className="flex flex-col gap-1 text-[var(--text-muted)] mt-1">
+                            <span>Kho: <span className="text-[var(--text-primary)] font-medium">{item.warehouseName}</span></span>
+                            <span>Min: {item.minStock} {item.unit}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold text-lg text-[var(--text-primary)]">{item.quantity.toLocaleString()}</span>
+                            <span className="text-xs text-[var(--text-muted)] ml-1">{item.unit}</span>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
+                </div>
+              </>
+            )}
+            
+            <div className="flex items-center justify-between px-5 py-3 border-t text-xs" style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
+              Hiển thị {filteredInventory.length} / {inventory.length} mặt hàng
             </div>
           </Card>
         </div>

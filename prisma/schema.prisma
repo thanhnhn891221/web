@@ -160,3 +160,124 @@ model Employee {
   @@index([status])
   @@map("employees")
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PMS — Purchase Management System
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model Supplier {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  contact     String?
+  email       String?
+  phone       String?
+  category    String?  // Nguyên vật liệu, Bao bì, Máy móc...
+  rating      Float?   @default(0)
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchaseOrders PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  supplierId  String
+  supplier    Supplier @relation(fields: [supplierId], references: [id])
+  totalAmount Float    @default(0)
+  status      String   @default("draft") // draft, pending, approved, ordered, received, cancelled
+  expectedDate DateTime?
+  note        String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       PurchaseOrderItem[]
+
+  @@index([supplierId])
+  @@index([status])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  itemName        String
+  quantity        Float
+  unit            String
+  unitPrice       Float
+  totalPrice      Float
+
+  @@index([purchaseOrderId])
+  @@map("purchase_order_items")
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// WMS — Warehouse Management System
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model Warehouse {
+  id             String   @id @default(cuid())
+  code           String   @unique
+  name           String
+  address        String?
+  capacity       Float    @default(0)
+  usedCapacity   Float    @default(0)
+  managerId      String?
+  status         String   @default("active") // active, maintenance
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  inventoryItems InventoryItem[]
+  stockMovementsFrom StockMovement[] @relation("MovementFrom")
+  stockMovementsTo   StockMovement[] @relation("MovementTo")
+
+  @@map("warehouses")
+}
+
+model InventoryItem {
+  id           String   @id @default(cuid())
+  sku          String   @unique
+  name         String
+  category     String?
+  warehouseId  String
+  warehouse    Warehouse @relation(fields: [warehouseId], references: [id])
+  zone         String?
+  quantity     Float    @default(0)
+  minStock     Float    @default(0)
+  unit         String
+  status       String   @default("in_stock") // in_stock, low_stock, out_of_stock
+  lastUpdated  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([warehouseId])
+  @@index([sku])
+  @@map("inventory_items")
+}
+
+model StockMovement {
+  id             String   @id @default(cuid())
+  type           String   // in, out, transfer
+  itemName       String
+  sku            String?  
+  quantity       Float
+  unit           String
+  fromWarehouseId String?
+  fromWarehouse  Warehouse? @relation("MovementFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouseId   String?
+  toWarehouse    Warehouse? @relation("MovementTo", fields: [toWarehouseId], references: [id])
+  reason         String?
+  refCode        String?  // PO-2026-001, OMS-1254...
+  createdById    String?
+  createdAt      DateTime @default(now())
+
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
+  @@index([type])
+  @@map("stock_movements")
+}

@@ -4,30 +4,43 @@ import React, { useState } from 'react';
 import { Calculator, DollarSign, FileText, TrendingUp, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Button, Badge, Card, StatCard } from '@/components/ui';
 
-const TRANSACTIONS = [
-  { id: '1', code: 'GL-001', date: '2026-03-31', description: 'Doanh thu bán hàng — OMS-1256', debit: 32000000, credit: 0, account: '511 - Doanh thu', type: 'revenue' },
-  { id: '2', code: 'GL-002', date: '2026-03-31', description: 'Chi phí NVL — PO-2026-001', debit: 0, credit: 15600000, account: '621 - Chi phí NVL', type: 'expense' },
-  { id: '3', code: 'GL-003', date: '2026-03-31', description: 'Lương tháng 3/2026', debit: 0, credit: 248000000, account: '334 - Phải trả CNV', type: 'expense' },
-  { id: '4', code: 'GL-004', date: '2026-03-30', description: 'Thu tiền KH — CoopMart', debit: 18500000, credit: 0, account: '131 - Phải thu KH', type: 'receivable' },
-  { id: '5', code: 'GL-005', date: '2026-03-30', description: 'Thanh toán NCC — Bao bì ĐN', debit: 0, credit: 11000000, account: '331 - Phải trả NCC', type: 'payable' },
-  { id: '6', code: 'GL-006', date: '2026-03-29', description: 'Khấu hao TSCĐ tháng 3', debit: 0, credit: 12500000, account: '214 - Hao mòn TSCĐ', type: 'depreciation' },
-];
-
-const RECEIVABLES = [
-  { customer: 'Siêu thị CoopMart', amount: 45000000, dueDate: '2026-04-05', status: 'current' },
-  { customer: 'Bách Hóa Xanh', amount: 32000000, dueDate: '2026-04-10', status: 'current' },
-  { customer: 'Vinmart', amount: 18500000, dueDate: '2026-03-25', status: 'overdue' },
-  { customer: 'Đại lý Phương Nam', amount: 7200000, dueDate: '2026-04-01', status: 'current' },
-];
-
 type Tab = 'journal' | 'receivables';
 
 export default function AMSPage() {
   const [activeTab, setActiveTab] = useState<Tab>('journal');
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [receivables, setReceivables] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [txnRes, invRes] = await Promise.all([
+          fetch('/api/transactions'),
+          fetch('/api/invoices')
+        ]);
+        const txnData = await txnRes.json();
+        const invData = await invRes.json();
+        if (txnData.success) setTransactions(txnData.data);
+        if (invData.success) {
+          // Filter invoices for receivables (unpaid/overdue)
+          const rec = invData.data.filter((i: any) => i.status !== 'paid');
+          setReceivables(rec);
+        }
+      } catch (err) {
+        console.error('Failed to fetch AMS data', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const fmt = (n: number) => n > 0 ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) : '—';
-  const totalDebit = TRANSACTIONS.reduce((s, t) => s + t.debit, 0);
-  const totalCredit = TRANSACTIONS.reduce((s, t) => s + t.credit, 0);
-  const totalReceivable = RECEIVABLES.reduce((s, r) => s + r.amount, 0);
+  const totalDebit = transactions.reduce((s, t) => s + t.debit, 0);
+  const totalCredit = transactions.reduce((s, t) => s + t.credit, 0);
+  const totalReceivable = receivables.reduce((s, r) => s + r.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -48,7 +61,7 @@ export default function AMSPage() {
         <StatCard title="Tổng Nợ (Debit)" value={fmt(totalDebit)} icon={ArrowUpRight} color="var(--primary-500)" />
         <StatCard title="Tổng Có (Credit)" value={fmt(totalCredit)} icon={ArrowDownRight} color="var(--accent-500)" />
         <StatCard title="Công nợ phải thu" value={fmt(totalReceivable)} icon={DollarSign} color="var(--amber)" />
-        <StatCard title="Quá hạn" value={RECEIVABLES.filter(r => r.status === 'overdue').length} icon={AlertTriangle} color="var(--rose)" changeLabel="Cần thu hồi" />
+        <StatCard title="Quá hạn" value={receivables.filter(r => r.status === 'overdue').length} icon={AlertTriangle} color="var(--rose)" changeLabel="Cần thu hồi" />
       </div>
 
       <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--slate-100)' }}>
@@ -60,9 +73,43 @@ export default function AMSPage() {
         })}
       </div>
 
-      {activeTab === 'journal' && (
-        <Card padding="none" className="animate-fade-in">
-          <div className="overflow-x-auto">
+      {isLoading ? (
+        <div className="p-8 flex flex-col items-center justify-center gap-4 animate-pulse">
+          <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-[var(--primary-400)] animate-spin" />
+          <p className="text-sm text-[var(--text-muted)]">Đang kết nối khối Tài chính...</p>
+        </div>
+      ) : activeTab === 'journal' ? (
+        <Card padding="none" className="animate-fade-in group w-full overflow-hidden">
+          {/* Mobile Card View */}
+          <div className="md:hidden flex flex-col divide-y divide-[var(--border-color)]">
+            {transactions.map(t => (
+              <div key={t.id} className="p-4 bg-white space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-bold text-[var(--primary-500)] mr-2">{t.code}</span>
+                    <span className="text-xs text-[var(--text-muted)]">{new Date(t.date).toLocaleDateString('vi-VN')}</span>
+                  </div>
+                  <Badge>{t.account}</Badge>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-[var(--text-primary)] leading-snug">{t.description}</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[var(--border-color)]">
+                  <div className="bg-[var(--slate-50)] p-2 rounded-lg text-center">
+                    <p className="text-[10px] uppercase text-[var(--text-muted)] font-semibold mb-1">Nợ (Debit)</p>
+                    <p className={`text-sm font-bold ${t.debit > 0 ? 'text-[var(--emerald)]' : 'text-[var(--text-muted)]'}`}>{fmt(t.debit)}</p>
+                  </div>
+                  <div className="bg-[var(--slate-50)] p-2 rounded-lg text-center">
+                    <p className="text-[10px] uppercase text-[var(--text-muted)] font-semibold mb-1">Có (Credit)</p>
+                    <p className={`text-sm font-bold ${t.credit > 0 ? 'text-[var(--rose)]' : 'text-[var(--text-muted)]'}`}>{fmt(t.credit)}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead><tr style={{ background: 'var(--slate-50)' }}>
                 {['Mã', 'Ngày', 'Diễn giải', 'Tài khoản', 'Nợ', 'Có'].map(h => (
@@ -70,7 +117,7 @@ export default function AMSPage() {
                 ))}
               </tr></thead>
               <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
-                {TRANSACTIONS.map(t => (
+                {transactions.map(t => (
                   <tr key={t.id} className="hover:bg-[var(--slate-25)] transition-colors">
                     <td className="px-5 py-3 text-sm font-semibold" style={{ color: 'var(--primary-500)' }}>{t.code}</td>
                     <td className="px-5 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>{new Date(t.date).toLocaleDateString('vi-VN')}</td>
@@ -84,20 +131,23 @@ export default function AMSPage() {
             </table>
           </div>
         </Card>
-      )}
-
-      {activeTab === 'receivables' && (
+      ) : (
         <div className="space-y-3 animate-fade-in">
-          {RECEIVABLES.map((r, i) => (
-            <Card key={i} hover padding="lg">
-              <div className="flex items-center justify-between">
+          {receivables.map((r, i) => (
+            <Card key={r.id || i} hover padding="lg">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold">{r.customer}</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-[var(--accent-500)]">{r.code}</span>
+                    <h3 className="text-sm font-semibold">{r.customerName}</h3>
+                  </div>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Hạn thanh toán: {new Date(r.dueDate).toLocaleDateString('vi-VN')}</p>
                 </div>
-                <div className="text-right">
+                <div className="sm:text-right flex items-center justify-between sm:block">
                   <p className="text-lg font-bold">{fmt(r.amount)}</p>
-                  <Badge variant={r.status === 'overdue' ? 'danger' : 'success'}>{r.status === 'overdue' ? 'Quá hạn' : 'Trong hạn'}</Badge>
+                  <Badge variant={r.status === 'overdue' ? 'danger' : r.status === 'paid' ? 'success' : 'warning'}>
+                    {r.status === 'overdue' ? 'Quá hạn' : r.status === 'paid' ? 'Đã thu' : 'Chưa thu'}
+                  </Badge>
                 </div>
               </div>
             </Card>

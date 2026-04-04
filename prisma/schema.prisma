@@ -133,6 +133,7 @@ model Department {
   updatedAt   DateTime     @updatedAt
 
   employees   Employee[]
+  budgets     Budget[]
 
   @@map("departments")
 }
@@ -298,6 +299,7 @@ model Customer {
   updatedAt DateTime @updatedAt
 
   salesOrders SalesOrder[]
+  invoices    Invoice[]
 
   @@map("customers")
 }
@@ -317,6 +319,7 @@ model SalesOrder {
 
   items           SalesOrderItem[]
   shipments       Shipment[]
+  invoices        Invoice[]
 
   @@index([customerId])
   @@index([status])
@@ -393,4 +396,58 @@ model Shipment {
   @@index([driverId])
   @@index([status])
   @@map("shipments")
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// FMS, AMS & BMS — Finance & Risk Group
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model Transaction {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  date        DateTime @default(now())
+  description String
+  account     String
+  debit       Float    @default(0)
+  credit      Float    @default(0)
+  type        String   @default("revenue") // revenue, expense, receivable, payable, depreciation
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("transactions")
+}
+
+model Invoice {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  salesOrderId String?
+  salesOrder   SalesOrder? @relation(fields: [salesOrderId], references: [id])
+  customerId   String?
+  customer     Customer?   @relation(fields: [customerId], references: [id])
+  customerName String
+  amount       Float
+  dueDate      DateTime
+  status       String   @default("unpaid") // paid, unpaid, overdue
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([salesOrderId])
+  @@index([customerId])
+  @@map("invoices")
+}
+
+model Budget {
+  id           String   @id @default(cuid())
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentName String
+  period       String   // e.g. "Q2/2026", "2026"
+  allocated    Float
+  spent        Float    @default(0)
+  status       String   @default("active") // active, closed
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([departmentId])
+  @@map("budgets")
 }

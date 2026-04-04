@@ -452,6 +452,47 @@ async function main() {
   }
   console.log(`  ✅ Drivers and Shipments created\n`);
 
+  console.log('\n💰 Tạo Finance Data (FMS, AMS, BMS)...');
+  const transactionsData = [
+    { code: 'GL-001', date: new Date('2026-03-31'), description: 'Doanh thu bán hàng OMS-1254', account: '511 - Doanh thu', debit: 32000000, credit: 0, type: 'revenue' },
+    { code: 'GL-002', date: new Date('2026-03-31'), description: 'Chi phí NVL PO-001', account: '621 - Chi phí NVL', debit: 0, credit: 15600000, type: 'expense' },
+    { code: 'GL-003', date: new Date('2026-03-31'), description: 'Lương tháng 3/2026', account: '334 - Phải trả CNV', debit: 0, credit: 248000000, type: 'expense' },
+    { code: 'GL-004', date: new Date('2026-03-30'), description: 'Thu tiền KH CoopMart', account: '131 - Phải thu KH', debit: 18500000, credit: 0, type: 'receivable' },
+    { code: 'GL-005', date: new Date('2026-03-30'), description: 'Thanh toán NCC Bao Bì ĐN', account: '331 - Phải trả NCC', debit: 0, credit: 11000000, type: 'payable' },
+  ];
+  for (const t of transactionsData) {
+    const existing = await prisma.transaction.findUnique({ where: { code: t.code } });
+    if (!existing) {
+      await prisma.transaction.create({ data: t });
+    }
+  }
+
+  const invoicesData = [
+    { code: 'INV-2026-001', soId: so1?.id, cust: 'Siêu thị CoopMart', custId: customers['Siêu thị CoopMart'], amount: 45000000, dueDate: new Date('2026-04-05'), status: 'unpaid' },
+    { code: 'INV-2026-002', soId: so2?.id, cust: 'Bách Hóa Xanh', custId: customers['Bách Hóa Xanh'], amount: 32000000, dueDate: new Date('2026-04-10'), status: 'paid' },
+  ];
+  for (const i of invoicesData) {
+    const existing = await prisma.invoice.findUnique({ where: { code: i.code } });
+    if (!existing) {
+      await prisma.invoice.create({
+        data: { code: i.code, salesOrderId: i.soId, customerId: i.custId, customerName: i.cust, amount: i.amount, dueDate: i.dueDate, status: i.status }
+      });
+    }
+  }
+
+  const budgetsData = [
+    { name: 'Phòng Bán Hàng', deptId: depts['SALE'], period: 'Q2/2026', allocated: 500000000, spent: 120000000 },
+    { name: 'Phòng Sản xuất', deptId: depts['SX'], period: 'Q2/2026', allocated: 2000000000, spent: 850000000 },
+    { name: 'Phòng Nhân sự', deptId: depts['HR'], period: 'Q2/2026', allocated: 150000000, spent: 45000000 },
+  ];
+  for (const b of budgetsData) {
+    // Just simple create for budget
+    await prisma.budget.create({
+      data: { departmentId: b.deptId, departmentName: b.name, period: b.period, allocated: b.allocated, spent: b.spent }
+    });
+  }
+  console.log(`  ✅ Finance data created\n`);
+
   // ━━━ SUMMARY ━━━
   console.log('═══════════════════════════════════════');
   console.log('🎉 Khởi tạo dữ liệu hoàn tất!');

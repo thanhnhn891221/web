@@ -1,116 +1,124 @@
 'use client';
 
-import React from 'react';
-import { BarChart3, TrendingUp, DollarSign, Activity, PieChart, LineChart, Users, Package, ShoppingCart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { DollarSign, FileText, CheckCircle, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Card, StatCard, Badge, Button } from '@/components/ui';
 
-// Mock data for UI presentation
-const METRICS = [
-  { title: "Tổng Doanh Thu Năm", value: "₫24.5B", change: 15.2, icon: DollarSign, color: "var(--emerald)" },
-  { title: "Tăng trưởng KH mới", value: "1,245", change: 8.4, icon: Users, color: "var(--primary-500)" },
-  { title: "Tỷ lệ chuyển đổi", value: "4.8%", change: -1.2, icon: TrendingUp, color: "var(--amber)" },
-  { title: "Lợi nhuận gộp", value: "₫8.2B", change: 12.5, icon: Activity, color: "var(--accent-500)" }
-];
-
-const TOP_PRODUCTS = [
-  { name: 'Bánh quy vị bơ 200g', revenue: '₫2.4B', growth: '+15%', status: 'trending_up' },
-  { name: 'Bánh mì sandwich 400g', revenue: '₫1.8B', growth: '+8%', status: 'stable' },
-  { name: 'Nước ép cam tươi 500ml', revenue: '₫1.2B', growth: '+25%', status: 'trending_up' },
-  { name: 'Kẹo dẻo trái cây 150g', revenue: '₫850M', growth: '-5%', status: 'trending_down' },
-];
-
 export default function BMSPage() {
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        const res = await fetch('/api/invoices');
+        const data = await res.json();
+        if (data.success) setInvoices(data.data);
+      } catch (err) {
+        console.error('Failed to fetch invoices', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchInvoices();
+  }, []);
+
+  const fmt = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+  
+  const totalAmount = invoices.reduce((s, i) => s + i.amount, 0);
+  const paidAmount = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0);
+  const unpaidAmount = invoices.filter(i => i.status === 'unpaid' || i.status === 'overdue').reduce((s, i) => s + i.amount, 0);
+  const overdueCount = invoices.filter(i => i.status === 'overdue').length;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(220, 75%, 55%, 0.12)' }}>
-          <BarChart3 size={22} style={{ color: 'hsl(220, 75%, 55%)' }} />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">BMS — Business Intelligence</h1>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Phân tích dữ liệu đa chiều, báo cáo quản trị chuyên sâu</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-        {METRICS.map((metric, idx) => (
-          <StatCard
-            key={idx}
-            title={metric.title}
-            value={metric.value}
-            change={metric.change}
-            icon={metric.icon}
-            color={metric.color}
-          />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in stagger-children">
-        {/* Placeholder for complex charts */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card padding="lg" className="h-80 flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-lg flex items-center gap-2"><LineChart size={18}/> Xu hướng Doanh thu & Lợi nhuận</h2>
-              <select className="text-sm border-none bg-transparent outline-none cursor-pointer" style={{ color: 'var(--text-muted)' }}>
-                <option>Năm 2026</option>
-                <option>Năm 2025</option>
-              </select>
-            </div>
-            <div className="flex-1 flex items-center justify-center opacity-50 bg-[var(--slate-50)] rounded-xl border border-dashed border-[var(--border-color)]">
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Khu vực biểu đồ phân tích xu hướng (Line Chart)</p>
-            </div>
-          </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card padding="lg" className="h-64 flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-base flex items-center gap-2"><PieChart size={18}/> Cơ cấu Chi phí</h2>
-              </div>
-              <div className="flex-1 flex items-center justify-center opacity-50 bg-[var(--slate-50)] rounded-xl border border-dashed border-[var(--border-color)]">
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Biểu đồ tròn (Pie Chart)</p>
-              </div>
-            </Card>
-
-            <Card padding="lg" className="h-64 flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-base flex items-center gap-2"><BarChart3 size={18}/> Phân bổ Kênh bán</h2>
-              </div>
-              <div className="flex-1 flex items-center justify-center opacity-50 bg-[var(--slate-50)] rounded-xl border border-dashed border-[var(--border-color)]">
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Biểu đồ cột (Bar Chart)</p>
-              </div>
-            </Card>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(220, 75%, 55%, 0.12)' }}>
+            <FileText size={22} style={{ color: 'hsl(220, 75%, 55%)' }} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">BMS — Quản lý Hóa đơn</h1>
+            <p className="text-sm border-none bg-transparent outline-none" style={{ color: 'var(--text-secondary)' }}>Billing, xuất hóa đơn & theo dõi thanh toán</p>
           </div>
         </div>
+        <Button icon={FileText}>Tạo hóa đơn</Button>
+      </div>
 
-        <div className="space-y-6">
-          <Card padding="none" className="overflow-hidden">
-            <div className="p-5 border-b" style={{ borderColor: 'var(--border-color)' }}>
-              <h2 className="font-semibold text-lg flex items-center gap-2"><Package size={18}/> Top Sản phẩm Doanh thu</h2>
-            </div>
-            <div className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
-              {TOP_PRODUCTS.map((prod, idx) => (
-                <div key={idx} className="p-4 flex items-center justify-between hover:bg-[var(--slate-25)] transition-colors">
-                  <div>
-                    <h3 className="text-sm font-medium">{prod.name}</h3>
-                    <p className="text-xs mt-1 font-semibold">{prod.revenue}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
+        <StatCard title="Tổng Hóa đơn" value={fmt(totalAmount)} icon={DollarSign} color="var(--primary-500)" />
+        <StatCard title="Đã thu" value={fmt(paidAmount)} icon={CheckCircle} color="var(--emerald)" />
+        <StatCard title="Chưa thu" value={fmt(unpaidAmount)} icon={Clock} color="var(--amber)" />
+        <StatCard title="Quá hạn" value={overdueCount} icon={AlertTriangle} color="var(--rose)" />
+      </div>
+
+      <Card padding="none" className="overflow-hidden">
+        {isLoading ? (
+          <div className="p-8 flex flex-col items-center justify-center gap-4 animate-pulse">
+            <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-[var(--primary-400)] animate-spin" />
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Đang tải dữ liệu Hóa đơn...</p>
+          </div>
+        ) : (
+          <>
+            {/* Mobile Cards */}
+            <div className="md:hidden flex flex-col divide-y" style={{ borderColor: 'var(--border-color)' }}>
+              {invoices.map(inv => (
+                <div key={inv.id} className="p-4 bg-white space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-bold text-[var(--primary-500)] block">{inv.code}</span>
+                      <span className="text-xs text-[var(--text-muted)] mt-0.5 block flex items-center gap-1">Hạn: {new Date(inv.dueDate).toLocaleDateString('vi-VN')}</span>
+                    </div>
+                    <Badge variant={inv.status === 'paid' ? 'success' : inv.status === 'overdue' ? 'danger' : 'warning'}>
+                      {inv.status === 'paid' ? 'Đã thanh toán' : inv.status === 'overdue' ? 'Quá hạn' : 'Chưa thu'}
+                    </Badge>
                   </div>
-                  <Badge variant={prod.status === 'trending_up' ? 'success' : prod.status === 'trending_down' ? 'danger' : 'default'}>
-                    {prod.growth}
-                  </Badge>
+                  <div className="mt-2">
+                    <h3 className="text-sm font-semibold">{inv.customerName}</h3>
+                    <p className="text-xs text-[var(--text-muted)] mt-1 flex items-center gap-1">Đơn hàng: <span className="font-medium text-[var(--text-primary)]">{inv.salesOrderId ? 'OMS-1254' : 'N/A'}</span></p>
+                  </div>
+                  <div className="pt-3 border-t flex justify-between items-center" style={{ borderColor: 'var(--border-color)' }}>
+                    <span className="text-xs text-[var(--text-muted)] uppercase font-semibold">TỔNG TIỀN</span>
+                    <span className="text-lg font-bold text-[var(--accent-500)]">{fmt(inv.amount)}</span>
+                  </div>
                 </div>
               ))}
             </div>
-          </Card>
 
-          <Card padding="lg" className="bg-gradient-to-br from-indigo-500 to-purple-600 border-none text-white">
-            <h3 className="font-semibold text-lg max-w-[200px]">AI Insight & Báo cáo Tự động</h3>
-            <p className="text-sm mt-3 text-white/80 line-clamp-3">
-              Mô hình học máy dự báo nhu cầu sản phẩm "Nước ép cam tươi" sẽ tăng vọt vào 2 tháng tới. Ước tính cần dự trữ thêm 30% nguyên liệu.
-            </p>
-            <Button variant="outline" className="mt-4 bg-white/20 border-white/30 hover:bg-white/30 border-transparent text-white w-full">Xem chi tiết báo cáo AI</Button>
-          </Card>
-        </div>
-      </div>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr style={{ background: 'var(--slate-50)' }}>
+                    <th className="text-left text-xs font-semibold uppercase tracking-wider px-5 py-3" style={{ color: 'var(--text-muted)' }}>Mã HĐ</th>
+                    <th className="text-left text-xs font-semibold uppercase tracking-wider px-5 py-3" style={{ color: 'var(--text-muted)' }}>Khách hàng</th>
+                    <th className="text-left text-xs font-semibold uppercase tracking-wider px-5 py-3" style={{ color: 'var(--text-muted)' }}>Mã Đơn hàng</th>
+                    <th className="text-right text-xs font-semibold uppercase tracking-wider px-5 py-3" style={{ color: 'var(--text-muted)' }}>Tổng Tiền</th>
+                    <th className="text-center text-xs font-semibold uppercase tracking-wider px-5 py-3" style={{ color: 'var(--text-muted)' }}>Hạn TT</th>
+                    <th className="text-center text-xs font-semibold uppercase tracking-wider px-5 py-3" style={{ color: 'var(--text-muted)' }}>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+                  {invoices.map(inv => (
+                    <tr key={inv.id} className="hover:bg-[var(--slate-25)] transition-colors">
+                      <td className="px-5 py-4 text-sm font-semibold" style={{ color: 'var(--primary-500)' }}>{inv.code}</td>
+                      <td className="px-5 py-4 text-sm font-medium">{inv.customerName}</td>
+                      <td className="px-5 py-4 text-sm text-[var(--text-muted)]">{inv.salesOrderId ? 'OMS-1254' : 'N/A'}</td>
+                      <td className="px-5 py-4 text-sm font-bold text-right text-[var(--accent-500)]">{fmt(inv.amount)}</td>
+                      <td className="px-5 py-4 text-sm text-center" style={{ color: 'var(--text-secondary)' }}>{new Date(inv.dueDate).toLocaleDateString('vi-VN')}</td>
+                      <td className="px-5 py-4 text-center">
+                        <Badge variant={inv.status === 'paid' ? 'success' : inv.status === 'overdue' ? 'danger' : 'warning'}>
+                          {inv.status === 'paid' ? 'Đã thanh toán' : inv.status === 'overdue' ? 'Quá hạn' : 'Chưa thu'}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </Card>
     </div>
   );
 }

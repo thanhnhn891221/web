@@ -59,7 +59,7 @@ export default function LoginPage() {
       <div
         className="hidden lg:flex lg:w-[55%] relative overflow-hidden flex-col justify-between p-12"
         style={{
-          background: 'linear-gradient(135deg, var(--primary-950) 0%, var(--primary-800) 50%, hsl(200, 60%, 20%) 100%)',
+          background: 'linear-gradient(135deg, var(--primary-950) 0%, var(--primary-800) 50%, hsl(348, 60%, 18%) 100%)',
         }}
       >
         {/* Decorative Elements */}
@@ -82,8 +82,8 @@ export default function LoginPage() {
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center"
               style={{
-                background: 'linear-gradient(135deg, var(--primary-400), var(--accent-400))',
-                boxShadow: '0 0 24px rgba(59, 130, 246, 0.4)',
+                background: 'linear-gradient(135deg, var(--primary-500), var(--primary-400))',
+                boxShadow: '0 0 24px rgba(200, 40, 60, 0.4)',
               }}
             >
               <span className="text-white font-bold text-lg">A</span>
@@ -153,7 +153,7 @@ export default function LoginPage() {
           <div className="lg:hidden flex items-center gap-3 mb-8">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--primary-500), var(--accent-400))' }}
+              style={{ background: 'linear-gradient(135deg, var(--primary-500), var(--primary-400))' }}
             >
               <span className="text-white font-bold">A</span>
             </div>
@@ -265,7 +265,7 @@ export default function LoginPage() {
                 background: isLoading
                   ? 'var(--primary-400)'
                   : 'linear-gradient(135deg, var(--primary-500), var(--primary-600))',
-                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.25)',
+                boxShadow: '0 4px 14px rgba(200, 40, 60, 0.3)',
               }}
             >
               {isLoading ? (

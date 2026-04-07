@@ -184,7 +184,7 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
             </div>
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-              style={{ background: 'linear-gradient(135deg, var(--primary-500), var(--accent-400))' }}
+              style={{ background: 'linear-gradient(135deg, var(--primary-500), var(--primary-400))' }}
             >
               {userInitial}
             </div>

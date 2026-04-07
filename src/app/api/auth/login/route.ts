@@ -156,10 +156,13 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error) {
-    console.error('Login error:', error);
+  } catch (error: any) {
+    console.error('Login error:', error?.message || error);
+    const message = process.env.NODE_ENV === 'development'
+      ? `Lỗi: ${error?.message || 'Unknown'}`
+      : 'Lỗi hệ thống. Vui lòng thử lại.';
     return NextResponse.json(
-      { success: false, error: 'Lỗi hệ thống. Vui lòng thử lại.' },
+      { success: false, error: message },
       { status: 500 }
     );
   }

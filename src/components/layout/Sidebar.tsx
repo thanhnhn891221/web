@@ -91,8 +91,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           <div
             className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{
-              background: 'linear-gradient(135deg, var(--primary-400), var(--accent-400))',
-              boxShadow: '0 0 16px rgba(59, 130, 246, 0.3)',
+              background: 'linear-gradient(135deg, var(--primary-500), var(--primary-400))',
+              boxShadow: '0 0 16px rgba(200, 40, 60, 0.3)',
             }}
           >
             <span className="text-white font-bold text-sm">A</span>

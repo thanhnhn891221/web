@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     if (!payload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
 
     const dbInventory = await prisma.inventoryItem.findMany({
+      where: { deletedAt: null },
       include: {
         warehouse: true,
       },
@@ -38,5 +39,27 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching inventory:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const data = await request.json();
+    const item = await prisma.inventoryItem.create({
+      data: {
+        sku: data.sku || `SKU-${Date.now()}`,
+        name: data.name,
+        category: data.category,
+        warehouseId: data.warehouseId,
+        zone: data.zone,
+        quantity: parseFloat(data.quantity) || 0,
+        minStock: parseFloat(data.minStock) || 0,
+        unit: data.unit || 'Kg',
+        status: data.status || 'in_stock',
+      }
+    });
+    return NextResponse.json({ success: true, data: item });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }

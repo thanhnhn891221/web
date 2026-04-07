@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
-
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const orders = await prisma.salesOrder.findMany({
+      where: { deletedAt: null },
       include: {
         customer: true,
         items: true,
@@ -14,17 +13,42 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' }
     });
 
-    const formattedData = orders.map(o => ({
+    const data = orders.map(o => ({
       ...o,
       customerName: o.customer.name,
-      itemsCount: o.items.reduce((sum, i) => sum + i.quantity, 0),
+      itemsCount: o.items.length,
     }));
 
-    return NextResponse.json({ success: true, data: formattedData });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error fetching sales orders:', error);
-    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
+    return NextResponse.json({ success: false, error: 'Failed' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const data = await request.json();
+    const order = await prisma.salesOrder.create({
+      data: {
+        code: data.code || `SO-${Date.now()}`,
+        customerId: data.customerId,
+        totalAmount: parseFloat(data.totalAmount) || 0,
+        status: data.status || 'pending',
+        items: {
+          create: data.items?.map((item: any) => ({
+            productName: item.name,
+            quantity: parseFloat(item.qty),
+            unit: item.unit || 'Pc',
+            unitPrice: parseFloat(item.price),
+            totalPrice: parseFloat(item.qty) * parseFloat(item.price)
+          }))
+        }
+      },
+      include: { items: true }
+    });
+    return NextResponse.json({ success: true, data: order });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ success: false, error: 'Failed' }, { status: 500 });
   }
 }

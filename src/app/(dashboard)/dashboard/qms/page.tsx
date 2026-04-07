@@ -1,163 +1,301 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  CheckCircle, Search, AlertTriangle, FileText, ClipboardCheck,
-  BarChart3, Shield, Eye, Calendar, User, Clock
+  ShieldCheck, Search, Filter, Plus, Eye, CheckCircle2,
+  AlertCircle, Clock, FileText, User, Tag, MoreHorizontal,
+  ClipboardCheck, Trash2, Check, X, Edit, Save
 } from 'lucide-react';
-import { Button, Badge, Card, Modal, StatCard } from '@/components/ui';
-
-interface QualityCheck {
-  id: string;
-  code: string;
-  product: string;
-  batch: string;
-  type: 'incoming' | 'in_process' | 'final' | 'customer_return';
-  inspector: string;
-  result: 'passed' | 'failed' | 'pending' | 'conditional';
-  defectRate: number;
-  checkedAt: string;
-  criteria: { name: string; standard: string; actual: string; pass: boolean }[];
-  note?: string;
-}
-
-const CHECKS: QualityCheck[] = [
-  { id: '1', code: 'QC-001', product: 'Bánh quy vị bơ 200g', batch: 'LSX-001-B3', type: 'in_process', inspector: 'Ngô Thị Lan Anh', result: 'passed', defectRate: 0.3, checkedAt: '2026-03-31T14:30:00', criteria: [{ name: 'Trọng lượng', standard: '200 ± 5g', actual: '201g', pass: true }, { name: 'Độ ẩm', standard: '< 4%', actual: '3.2%', pass: true }, { name: 'Màu sắc', standard: 'Vàng nhạt đồng đều', actual: 'Đạt', pass: true }] },
-  { id: '2', code: 'QC-002', product: 'Đường tinh luyện', batch: 'NVL-PO2026001', type: 'incoming', inspector: 'Trần Quốc Hùng', result: 'passed', defectRate: 0, checkedAt: '2026-03-31T09:00:00', criteria: [{ name: 'Độ tinh khiết', standard: '≥ 99.5%', actual: '99.7%', pass: true }, { name: 'Màu sắc (ICUMSA)', standard: '< 45', actual: '38', pass: true }] },
-  { id: '3', code: 'QC-003', product: 'Bánh mì sandwich 400g', batch: 'LSX-002-B1', type: 'final', inspector: 'Ngô Thị Lan Anh', result: 'conditional', defectRate: 2.1, checkedAt: '2026-03-31T16:00:00', criteria: [{ name: 'Trọng lượng', standard: '400 ± 10g', actual: '405g', pass: true }, { name: 'Nhãn mác', standard: 'Đầy đủ, rõ nét', actual: 'Nhòe ở 2.1% SP', pass: false }], note: 'Lô hàng chấp nhận có điều kiện — yêu cầu in lại nhãn 52 sản phẩm' },
-  { id: '4', code: 'QC-004', product: 'Kẹo dẻo trái cây 150g', batch: 'LSX-003-PRE', type: 'incoming', inspector: 'Phạm Ngọc Hân', result: 'failed', defectRate: 8.5, checkedAt: '2026-03-30T11:00:00', criteria: [{ name: 'Hàm lượng gelatin', standard: '15-18%', actual: '12.3%', pass: false }, { name: 'Vi sinh', standard: 'Đạt TCVN', actual: 'E.Coli vượt ngưỡng', pass: false }], note: 'KHÔNG CHẤP NHẬN — Trả nhà cung cấp NCC-003' },
-  { id: '5', code: 'QC-005', product: 'Nước ép cam 500ml', batch: 'LSX-004-F', type: 'final', inspector: 'Trần Quốc Hùng', result: 'passed', defectRate: 0.1, checkedAt: '2026-03-31T08:00:00', criteria: [{ name: 'pH', standard: '3.5-4.0', actual: '3.7', pass: true }, { name: 'Độ Brix', standard: '11-13', actual: '12.1', pass: true }, { name: 'Seal', standard: 'Kín hoàn toàn', actual: 'Đạt', pass: true }] },
-];
-
-const TYPE_MAP: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'danger' }> = {
-  incoming: { label: 'Nguyên liệu đầu vào', variant: 'info' },
-  in_process: { label: 'Trong quá trình SX', variant: 'warning' },
-  final: { label: 'Thành phẩm cuối', variant: 'success' },
-  customer_return: { label: 'Hàng trả lại', variant: 'danger' },
-};
-
-const RESULT_MAP: Record<string, { label: string; variant: 'success' | 'danger' | 'warning' | 'default'; icon: React.ElementType }> = {
-  passed: { label: 'ĐẠT', variant: 'success', icon: CheckCircle },
-  failed: { label: 'KHÔNG ĐẠT', variant: 'danger', icon: AlertTriangle },
-  conditional: { label: 'CÓ ĐIỀU KIỆN', variant: 'warning', icon: Shield },
-  pending: { label: 'Đang kiểm', variant: 'default', icon: Clock },
-};
+import { Button, Badge, Card, Modal, Input, Select, StatCard, ConfirmModal } from '@/components/ui';
 
 export default function QMSPage() {
-  const [selectedCheck, setSelectedCheck] = useState<QualityCheck | null>(null);
-  const passed = CHECKS.filter(c => c.result === 'passed').length;
-  const failed = CHECKS.filter(c => c.result === 'failed').length;
-  const avgDefect = (CHECKS.reduce((s, c) => s + c.defectRate, 0) / CHECKS.length).toFixed(1);
+  const [checks, setChecks] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Modals state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCheck, setSelectedCheck] = useState<any>(null);
+  const [editingCheck, setEditingCheck] = useState<any | null>(null);
+
+  // Confirm Modal state
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'danger' | 'success' | 'warning' | 'info';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'danger',
+    onConfirm: () => {},
+  });
+
+  // Forms
+  const [formData, setFormData] = useState({
+    product: '', batch: '', type: 'final', inspector: 'Admin', note: '', result: 'pending', defectRate: '0',
+    criteria: [{ name: 'Ngoại quan', standard: 'Không trầy xước', actual: 'Đạt', pass: true }]
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/quality-checks');
+      const json = await res.json();
+      if (json.success) setChecks(json.data);
+    } catch (err) { console.error(err); }
+    finally { setIsLoading(false); }
+  };
+
+  // SAVE Handler
+  const handleSave = async () => {
+    if (editingCheck) {
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Cập nhật phiếu kiểm',
+        message: `Xác nhận lưu thay đổi cho phiếu kiểm ${editingCheck.code}?`,
+        type: 'success',
+        onConfirm: executeSave
+      });
+    } else {
+      executeSave();
+    }
+  };
+
+  const executeSave = async () => {
+    try {
+      const url = editingCheck ? `/api/quality-checks/${editingCheck.id}` : '/api/quality-checks';
+      const method = editingCheck ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) { 
+        setIsModalOpen(false); 
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        fetchData(); 
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // DELETE Handler
+  const confirmDelete = (check: any) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Xóa phiếu kiểm',
+      message: `Bạn có chắc chắn muốn xóa phiếu kiểm ${check.code}? Dữ liệu sẽ được ẩn khỏi hệ thống (Soft Delete).`,
+      type: 'danger',
+      onConfirm: () => executeDelete(check.id)
+    });
+  };
+
+  const executeDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/quality-checks/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        fetchData();
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // Edit Init
+  const openEdit = (check: any) => {
+    setEditingCheck(check);
+    setFormData({
+      product: check.product,
+      batch: check.batch,
+      type: check.type || 'final',
+      inspector: check.inspector || 'Admin',
+      note: check.note || '',
+      result: check.result || 'pending',
+      defectRate: check.defectRate?.toString() || '0',
+      criteria: check.criteria || []
+    });
+    setIsModalOpen(true);
+  };
+
+  const addCriteria = () => {
+    setFormData({ ...formData, criteria: [...formData.criteria, { name: '', standard: '', actual: '', pass: true }] });
+  };
+
+  const removeCriteria = (idx: number) => {
+    setFormData({ ...formData, criteria: formData.criteria.filter((_, i) => i !== idx) });
+  };
+
+  const updateCriteria = (idx: number, field: string, val: any) => {
+    const newC = [...formData.criteria];
+    (newC[idx] as any)[field] = val;
+    setFormData({ ...formData, criteria: newC });
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(152, 60%, 42%, 0.12)' }}>
-            <ClipboardCheck size={22} style={{ color: 'hsl(152, 60%, 42%)' }} />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(142, 70%, 45%, 0.12)' }}>
+            <ShieldCheck size={22} style={{ color: 'hsl(142, 70%, 45%)' }} />
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">QMS — Quản lý Chất lượng</h1>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Kiểm duyệt QA/QC, tiêu chuẩn sản phẩm</p>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Tiêu chuẩn, kiểm định & báo cáo KCS</p>
           </div>
         </div>
-        <Button icon={ClipboardCheck}>Tạo phiếu kiểm</Button>
+        <Button icon={Plus} onClick={() => {
+          setEditingCheck(null);
+          setFormData({
+            product: '', batch: '', type: 'final', inspector: 'Admin', note: '', result: 'pending', defectRate: '0',
+            criteria: [{ name: 'Ngoại quan', standard: 'Không trầy xước', actual: 'Đạt', pass: true }]
+          });
+          setIsModalOpen(true);
+        }}>
+          Tạo phiếu kiểm
+        </Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-        <StatCard title="Tổng phiếu kiểm" value={CHECKS.length} icon={FileText} color="var(--primary-500)" />
-        <StatCard title="Đạt chất lượng" value={passed} icon={CheckCircle} color="var(--emerald)" />
-        <StatCard title="Không đạt" value={failed} icon={AlertTriangle} color="var(--rose)" />
-        <StatCard title="Tỷ lệ lỗi TB" value={`${avgDefect}%`} icon={BarChart3} color="var(--amber)" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in stagger-children">
+        <StatCard title="Đã kiểm" value={checks.length} icon={ClipboardCheck} color="var(--primary-500)" />
+        <StatCard title="Đạt chuẩn" value={checks.filter(c => c.result === 'passed').length} icon={CheckCircle2} color="var(--emerald)" />
+        <StatCard title="Lỗi (Defect)" value={checks.filter(c => c.result === 'failed').length} icon={AlertCircle} color="var(--rose)" />
+        <StatCard title="Đang chờ" value={checks.filter(c => c.result === 'pending').length} icon={Clock} color="var(--amber)" />
       </div>
 
-      <div className="space-y-3 animate-fade-in">
-        {CHECKS.map(check => {
-          const result = RESULT_MAP[check.result];
-          const type = TYPE_MAP[check.type];
-          const ResultIcon = result.icon;
-          return (
-            <Card key={check.id} hover padding="lg" className="group cursor-pointer" onClick={() => setSelectedCheck(check)}>
-              <div className="flex items-start gap-4">
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110`}
-                  style={{ background: check.result === 'passed' ? 'var(--emerald-light)' : check.result === 'failed' ? 'var(--rose-light)' : 'var(--amber-light)' }}>
-                  <ResultIcon size={20} style={{ color: check.result === 'passed' ? 'var(--emerald)' : check.result === 'failed' ? 'var(--rose)' : 'var(--amber)' }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold" style={{ color: 'var(--primary-500)' }}>{check.code}</span>
-                      <Badge variant={type.variant}>{type.label}</Badge>
-                    </div>
-                    <Badge variant={result.variant} icon={ResultIcon}>{result.label}</Badge>
-                  </div>
-                  <h3 className="text-sm font-semibold mt-1.5">{check.product}</h3>
-                  <div className="flex flex-wrap items-center gap-4 mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                    <span className="flex items-center gap-1"><FileText size={12} /> Lô: {check.batch}</span>
-                    <span className="flex items-center gap-1"><User size={12} /> {check.inspector}</span>
-                    <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(check.checkedAt).toLocaleString('vi-VN')}</span>
-                    <span>Lỗi: <strong style={{ color: check.defectRate > 2 ? 'var(--rose)' : 'var(--text-primary)' }}>{check.defectRate}%</strong></span>
-                  </div>
-                  {check.note && (
-                    <p className="mt-2 text-xs px-3 py-1.5 rounded-lg inline-block"
-                      style={{ background: check.result === 'failed' ? 'var(--rose-light)' : 'var(--amber-light)', color: check.result === 'failed' ? 'var(--rose)' : 'var(--amber)' }}>
-                      {check.note}
-                    </p>
-                  )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {checks.map(check => (
+          <Card key={check.id} hover padding="md" className="group">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 cursor-pointer" onClick={() => setSelectedCheck(check)}>
+                <p className="text-[10px] font-bold text-[var(--primary-500)] uppercase">{check.code}</p>
+                <h3 className="font-semibold text-sm line-clamp-1">{check.product}</h3>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <Badge variant={check.result === 'passed' ? 'success' : check.result === 'failed' ? 'danger' : 'warning'}>{check.result}</Badge>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button onClick={(e) => { e.stopPropagation(); openEdit(check); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                     <Edit size={14} />
+                   </button>
+                   <button onClick={(e) => { e.stopPropagation(); confirmDelete(check); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                     <Trash2 size={14} />
+                   </button>
                 </div>
               </div>
-            </Card>
-          );
-        })}
+            </div>
+            <div className="mt-4 space-y-2 cursor-pointer" onClick={() => setSelectedCheck(check)}>
+              <div className="flex items-center justify-between text-[11px]">
+                <span style={{ color: 'var(--text-muted)' }}>Lô hàng:</span>
+                <span className="font-medium text-slate-700">{check.batch}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span style={{ color: 'var(--text-muted)' }}>Người kiểm:</span>
+                <span className="font-medium text-slate-700">{check.inspector}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span style={{ color: 'var(--text-muted)' }}>Tỷ lệ lỗi:</span>
+                <span className={`font-medium ${check.defectRate > 0 ? 'text-[var(--rose)]' : 'text-emerald-600'}`}>{check.defectRate}%</span>
+              </div>
+            </div>
+          </Card>
+        ))}
       </div>
 
-      <Modal isOpen={!!selectedCheck} onClose={() => setSelectedCheck(null)}
-        title={`Phiếu kiểm ${selectedCheck?.code}`} description={selectedCheck?.product} size="lg"
-        footer={<Button variant="ghost" onClick={() => setSelectedCheck(null)}>Đóng</Button>}>
-        {selectedCheck && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { label: 'Kết quả', value: RESULT_MAP[selectedCheck.result].label },
-                { label: 'Loại kiểm tra', value: TYPE_MAP[selectedCheck.type].label },
-                { label: 'Tỷ lệ lỗi', value: `${selectedCheck.defectRate}%` },
-                { label: 'Người kiểm', value: selectedCheck.inspector },
-              ].map(f => (
-                <div key={f.label} className="p-3 rounded-xl" style={{ background: 'var(--slate-50)' }}>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{f.label}</p>
-                  <p className="text-sm font-semibold mt-1">{f.value}</p>
-                </div>
-              ))}
+      {/* Details Modal */}
+      <Modal isOpen={!!selectedCheck} onClose={() => setSelectedCheck(null)} title={`Chi tiết phiếu: ${selectedCheck?.code}`} size="lg">
+         <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4 p-3 bg-slate-50 rounded-xl mb-4">
+               <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">Sản phẩm</p>
+                  <p className="text-sm font-semibold">{selectedCheck?.product}</p>
+               </div>
+               <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">Lô hàng</p>
+                  <p className="text-sm font-semibold">{selectedCheck?.batch}</p>
+               </div>
+               <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">Kết quả</p>
+                  <Badge variant={selectedCheck?.result === 'passed' ? 'success' : 'danger'}>{selectedCheck?.result}</Badge>
+               </div>
             </div>
-            <div>
-              <h4 className="text-sm font-semibold mb-3">Tiêu chí kiểm tra</h4>
-              <div className="border rounded-xl overflow-hidden" style={{ borderColor: 'var(--border-color)' }}>
-                <table className="w-full">
-                  <thead>
-                    <tr style={{ background: 'var(--slate-50)' }}>
-                      {['Tiêu chí', 'Tiêu chuẩn', 'Thực tế', 'Kết quả'].map(h => (
-                        <th key={h} className="text-left text-xs font-semibold uppercase px-4 py-2" style={{ color: 'var(--text-muted)' }}>{h}</th>
-                      ))}
-                    </tr>
+            <h4 className="font-bold text-sm">Tiêu chí kiểm định</h4>
+            <div className="border rounded-xl overflow-hidden shadow-sm">
+               <table className="w-full text-sm">
+                  <thead className="bg-slate-100 text-slate-600">
+                     <tr>
+                        <th className="px-4 py-2.5 text-left font-semibold">Tiêu chí</th>
+                        <th className="px-4 py-2.5 text-left font-semibold">Tiêu chuẩn</th>
+                        <th className="px-4 py-2.5 text-left font-semibold">Thực tế</th>
+                        <th className="px-4 py-2.5 text-center font-semibold">Kết quả</th>
+                     </tr>
                   </thead>
-                  <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
-                    {selectedCheck.criteria.map((c, i) => (
-                      <tr key={i}>
-                        <td className="px-4 py-2.5 text-sm font-medium">{c.name}</td>
-                        <td className="px-4 py-2.5 text-sm" style={{ color: 'var(--text-secondary)' }}>{c.standard}</td>
-                        <td className="px-4 py-2.5 text-sm font-semibold">{c.actual}</td>
-                        <td className="px-4 py-2.5">
-                          <Badge variant={c.pass ? 'success' : 'danger'}>{c.pass ? 'Đạt' : 'Không đạt'}</Badge>
-                        </td>
-                      </tr>
-                    ))}
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                     {selectedCheck?.criteria?.map((c: any) => (
+                        <tr key={c.id} className="hover:bg-slate-50">
+                           <td className="px-4 py-2 opacity-80">{c.name}</td>
+                           <td className="px-4 py-2 opacity-80">{c.standard}</td>
+                           <td className="px-4 py-2 opacity-80">{c.actual}</td>
+                           <td className="px-4 py-2 text-center">
+                              {c.pass ? <Check size={16} className="text-emerald-500 mx-auto"/> : <X size={16} className="text-rose-500 mx-auto"/>}
+                           </td>
+                        </tr>
+                     ))}
                   </tbody>
-                </table>
-              </div>
+               </table>
             </div>
-          </div>
-        )}
+            {selectedCheck?.note && (
+               <div className="p-3 bg-blue-50 text-blue-700 rounded-lg text-xs italic">
+                  <strong>Ghi chú:</strong> {selectedCheck.note}
+               </div>
+            )}
+         </div>
       </Modal>
+
+      {/* Edit/Create Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingCheck ? "Cập nhật phiếu kiểm" : "Tạo phiếu kiểm mới"} size="xl"
+         footer={<><Button variant="ghost" onClick={() => setIsModalOpen(false)}>Hủy</Button><Button onClick={handleSave} icon={editingCheck ? Save : Plus}>{editingCheck ? 'Cập nhật' : 'Lưu phiếu kiểm'}</Button></>}>
+         <div className="grid grid-cols-2 gap-4 mb-6">
+            <Input label="Sản phẩm" value={formData.product} onChange={e => setFormData({...formData, product: e.target.value})} placeholder="Sợi dệt..." />
+            <Input label="Lô hàng" value={formData.batch} onChange={e => setFormData({...formData, batch: e.target.value})} placeholder="LOT-001" />
+         </div>
+         <div className="grid grid-cols-3 gap-4 mb-6">
+            <Select label="Phân loại" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} options={[{value:'inbound', label:'Nguyên liệu'}, {value:'process', label:'Bán thành phẩm'}, {value:'final', label:'Thành phẩm'}]} />
+            <Select label="Kết quả" value={formData.result} onChange={e => setFormData({...formData, result: e.target.value})} options={[{value:'pending', label:'Chưa có'}, {value:'passed', label:'ĐẠT'}, {value:'failed', label:'KHÔNG ĐẠT'}]} />
+            <Input label="Tỷ lệ lỗi (%)" type="number" value={formData.defectRate} onChange={e => setFormData({...formData, defectRate: e.target.value})} />
+         </div>
+         <div className="space-y-3">
+            <div className="flex items-center justify-between mb-2">
+               <h4 className="font-bold text-sm">Nhập tiêu chí kiểm định</h4>
+               <Button size="sm" variant="outline" icon={Plus} onClick={addCriteria}>Thêm tiêu chí</Button>
+            </div>
+            {formData.criteria.map((c, i) => (
+               <div key={i} className="flex items-center gap-3 animate-fade-in group/item">
+                  <div className="flex-1 min-w-0"><Input value={c.name} onChange={e => updateCriteria(i, 'name', e.target.value)} placeholder="Tên tiêu chí" /></div>
+                  <div className="flex-1 min-w-0"><Input value={c.standard} onChange={e => updateCriteria(i, 'standard', e.target.value)} placeholder="Tiêu chuẩn" /></div>
+                  <div className="flex-1 min-w-0"><Input value={c.actual} onChange={e => updateCriteria(i, 'actual', e.target.value)} placeholder="Thực tế" /></div>
+                  <button onClick={() => updateCriteria(i, 'pass', !c.pass)} className={`w-10 h-10 rounded-lg flex items-center justify-center border transition-all ${c.pass ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
+                     {c.pass ? <Check size={18}/> : <X size={18}/>}
+                  </button>
+                  <button onClick={() => removeCriteria(i)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors"><Trash2 size={16}/></button>
+               </div>
+            ))}
+         </div>
+         <div className="mt-6">
+            <Input label="Ghi chú tổng quát" value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} placeholder="..." />
+         </div>
+      </Modal>
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+      />
     </div>
   );
 }

@@ -129,9 +129,9 @@ export const MODULES: ModuleInfo[] = [
   {
     id: 'mms',
     code: 'MMS',
-    name: 'Marketing',
+    name: 'Marketing Management',
     nameVi: 'Quản lý Marketing',
-    description: 'Chiến dịch, phễu marketing, đa nền tảng',
+    description: 'Chiến dịch, phễu marketing, ROAS & Lead Funnel',
     icon: 'Megaphone',
     color: 'hsl(320, 75%, 55%)',
     href: '/dashboard/mms',
@@ -142,9 +142,9 @@ export const MODULES: ModuleInfo[] = [
   {
     id: 'sms',
     code: 'SMS',
-    name: 'Sales',
+    name: 'Sale Management',
     nameVi: 'Quản lý Bán hàng',
-    description: 'Chốt đơn, khách hàng trung thành, doanh số',
+    description: 'Đội ngũ Sale thị trường, Leads, Deal & Hiệu suất',
     icon: 'TrendingUp',
     color: 'hsl(15, 80%, 55%)',
     href: '/dashboard/sms',

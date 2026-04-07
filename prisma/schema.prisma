@@ -26,6 +26,7 @@ model User {
   lastLoginAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
 
   // Many-to-many: 1 user can have multiple roles
   userRoles   UserRole[]
@@ -45,6 +46,7 @@ model Role {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
 
   userRoles   UserRole[]
   permissions RoleModulePermission[]
@@ -98,6 +100,19 @@ model RoleModulePermission {
   @@map("role_module_permissions")
 }
 
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  group     String   @default("general") // general, security, mail, system
+  type      String   @default("string") // string, number, boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@map("system_settings")
+}
+
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String
@@ -131,6 +146,7 @@ model Department {
   isActive    Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
 
   employees   Employee[]
   budgets     Budget[]
@@ -156,6 +172,7 @@ model Employee {
   user         User?    @relation(fields: [userId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
 
   @@index([departmentId])
   @@index([status])
@@ -178,6 +195,7 @@ model Supplier {
   status      String   @default("active")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
 
   purchaseOrders PurchaseOrder[]
 
@@ -196,6 +214,7 @@ model PurchaseOrder {
   createdById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
 
   items       PurchaseOrderItem[]
 
@@ -233,6 +252,7 @@ model Warehouse {
   status         String   @default("active") // active, maintenance
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
 
   inventoryItems InventoryItem[]
   stockMovementsFrom StockMovement[] @relation("MovementFrom")
@@ -255,6 +275,7 @@ model InventoryItem {
   status       String   @default("in_stock") // in_stock, low_stock, out_of_stock
   lastUpdated  DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
 
   @@index([warehouseId])
   @@index([sku])
@@ -297,6 +318,7 @@ model Customer {
   rating    Float?   @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 
   salesOrders SalesOrder[]
   invoices    Invoice[]
@@ -316,6 +338,7 @@ model SalesOrder {
   note            String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
 
   items           SalesOrderItem[]
   shipments       Shipment[]
@@ -352,6 +375,7 @@ model Lead {
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 
   @@index([status])
   @@map("leads")
@@ -369,6 +393,7 @@ model Driver {
   rating          Float?   @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
 
   shipments       Shipment[]
 
@@ -391,6 +416,7 @@ model Shipment {
   estimatedDelivery DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
 
   @@index([salesOrderId])
   @@index([driverId])
@@ -399,7 +425,52 @@ model Shipment {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// FMS, AMS & BMS — Finance & Risk Group
+// FMS — Factory Management System
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model ProductionLine {
+  id          String   @id @default(cuid())
+  name        String
+  status      String   @default("idle") // running, idle, maintenance, changeover
+  product     String
+  efficiency  Float    @default(0)
+  target      Int      @default(0)
+  output      Int      @default(0)
+  shift       String?
+  operator    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  orders      ProductionOrder[]
+
+  @@map("production_lines")
+}
+
+model ProductionOrder {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  productId    String?
+  productName  String
+  quantity     Int
+  completed    Int      @default(0)
+  unit         String?
+  lineId       String?
+  line         ProductionLine? @relation(fields: [lineId], references: [id])
+  priority     String   @default("medium") // high, medium, low
+  status       String   @default("queued") // queued, in_progress, completed, on_hold
+  deadline     DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  @@index([lineId])
+  @@index([status])
+  @@map("production_orders")
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// AMS, BMS & CMS — Finance & Controling Group
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 model Transaction {
@@ -413,6 +484,7 @@ model Transaction {
   type        String   @default("revenue") // revenue, expense, receivable, payable, depreciation
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
 
   @@map("transactions")
 }
@@ -430,6 +502,7 @@ model Invoice {
   status       String   @default("unpaid") // paid, unpaid, overdue
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
 
   @@index([salesOrderId])
   @@index([customerId])
@@ -447,7 +520,173 @@ model Budget {
   status       String   @default("active") // active, closed
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
 
   @@index([departmentId])
   @@map("budgets")
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// RMS — Research & Development
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model ResearchProject {
+  id        String   @id @default(cuid())
+  code      String   @unique // RD-001
+  name      String
+  phase     String   @default("concept") // concept, research, prototype, testing, completed
+  lead      String
+  teamSize  Int      @default(1)
+  progress  Int      @default(0)
+  deadline  DateTime?
+  budget    Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@map("research_projects")
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MMS — Marketing Management System
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model MarketingCampaign {
+  id          String   @id @default(cuid())
+  name        String
+  channel     String
+  budget      Float    @default(0)
+  spent       Float    @default(0)
+  leads       Int      @default(0)
+  conversions Int      @default(0)
+  status      String   @default("planned") // planned, active, completed
+  period      String?  // e.g. "01/01 - 15/02/2026"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  @@map("marketing_campaigns")
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// QMS — Quality Management System
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model QualityCheck {
+  id          String   @id @default(cuid())
+  code        String   @unique // QC-001
+  product     String
+  batch       String
+  type        String   @default("incoming") // incoming, in_process, final, customer_return
+  inspector   String
+  result      String   @default("pending") // passed, failed, pending, conditional
+  defectRate  Float    @default(0)
+  checkedAt   DateTime @default(now())
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  criteria    QualityCriteria[]
+
+  @@map("quality_checks")
+}
+
+model QualityCriteria {
+  id             String       @id @default(cuid())
+  qualityCheckId String
+  qualityCheck   QualityCheck @relation(fields: [qualityCheckId], references: [id], onDelete: Cascade)
+  name           String
+  standard       String
+  actual         String
+  pass           Boolean      @default(true)
+
+  @@index([qualityCheckId])
+  @@map("quality_criteria")
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// IMS — Information Management System
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model ITAsset {
+  id          String   @id @default(cuid())
+  code        String   @unique // AST-001
+  name        String
+  type        String   // server, workstation, network, software
+  status      String   @default("active") // active, maintenance, retired
+  location    String?
+  assignedTo  String?  // Employee ID or name
+  purchaseDate DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  @@map("it_assets")
+}
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  code        String   @unique // TKT-001
+  title       String
+  description String?
+  priority    String   @default("medium") // low, medium, high, critical
+  status      String   @default("open") // open, in_progress, resolved, closed
+  requester   String
+  assignee    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  @@map("support_tickets")
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// DMS — Distribution Management System
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model Distributor {
+  id        String   @id @default(cuid())
+  code      String   @unique // DL-001
+  name      String
+  region    String
+  type      String   @default("Cấp 1")
+  contact   String
+  phone     String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@map("distributors")
+}
+
+model DistributionRoute {
+  id        String   @id @default(cuid())
+  code      String   @unique // RT-001
+  name      String
+  driverId  String?
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@map("distribution_routes")
+}
+
+model Risk {
+  id          String   @id @default(cuid())
+  code        String   @unique // RSK-001
+  title       String
+  description String?
+  category    String   @default("operational") // operational, financial, strategic, compliance
+  impact      String   @default("medium") // low, medium, high, extreme
+  likelihood  String   @default("medium") // low, medium, high
+  status      String   @default("identified") // identified, monitoring, mitigated, occurred
+  owner       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  @@map("risks")
 }

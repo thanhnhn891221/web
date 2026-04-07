@@ -1,18 +1,35 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
-
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const leads = await prisma.lead.findMany({
-      orderBy: { createdAt: 'desc' }
+    const leads = await prisma.lead.findMany({ 
+      where: { deletedAt: null },
+      orderBy: { createdAt: 'desc' } 
     });
     return NextResponse.json({ success: true, data: leads });
   } catch (error) {
-    console.error('Error fetching leads:', error);
-    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
+    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const data = await request.json();
+    const lead = await prisma.lead.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        source: data.source || 'Website',
+        status: data.status || 'new',
+        potential: data.potential || 'medium',
+        note: data.note,
+      }
+    });
+    return NextResponse.json({ success: true, data: lead });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }

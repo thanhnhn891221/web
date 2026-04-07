@@ -20,6 +20,9 @@ export async function GET(request: NextRequest) {
 
     // 2. Fetch employees from DB
     const dbEmployees = await prisma.employee.findMany({
+      where: {
+        deletedAt: null,
+      },
       include: {
         department: true,
       },
@@ -54,5 +57,34 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching employees:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const data = await request.json();
+    // 1. Get dept ID from name (since frontend sends name)
+    const dept = await prisma.department.findFirst({
+      where: { name: data.department }
+    });
+
+    const employee = await prisma.employee.create({
+      data: {
+        employeeCode: `NV-${Math.floor(Math.random() * 900) + 100}`, // Simple generator for now
+        fullName: data.name,
+        email: data.email,
+        phone: data.phone,
+        departmentId: dept?.id || '',
+        position: data.position,
+        level: data.level,
+        status: data.status,
+        hireDate: new Date(data.hireDate),
+      }
+    });
+
+    return NextResponse.json({ success: true, data: employee });
+  } catch (error) {
+    console.error('Error creating employee:', error);
+    return NextResponse.json({ error: 'Failed to create employee' }, { status: 500 });
   }
 }

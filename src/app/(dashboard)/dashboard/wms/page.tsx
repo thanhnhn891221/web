@@ -1,168 +1,244 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Warehouse, Search, Plus, Package, ArrowUpRight, ArrowDownRight,
-  MapPin, Layers, BarChart3, AlertTriangle, CheckCircle, Clock,
-  ArrowRightLeft, TrendingUp, Eye, Filter
+  Package, Plus, Search, Filter, Eye, Edit, Trash2,
+  Warehouse, MapPin, Truck, History, AlertTriangle,
+  MoveHorizontal, LayoutDashboard, Database, HardDrive,
+  CheckCircle2, ArrowRightLeft, User, Boxes, Save
 } from 'lucide-react';
-import { Button, Badge, Card, Modal, StatCard } from '@/components/ui';
-
-// ─── WMS Mock Data ──────────────────────────────────
-
-interface WarehouseLocation {
-  id: string;
-  name: string;
-  code: string;
-  address: string;
-  capacity: number;
-  usedCapacity: number;
-  manager: string;
-  status: 'active' | 'maintenance';
-}
-
-interface InventoryItem {
-  id: string;
-  sku: string;
-  name: string;
-  category: string;
-  warehouseId: string;
-  warehouseName: string;
-  zone: string;
-  quantity: number;
-  minStock: number;
-  unit: string;
-  lastUpdated: string;
-  status: 'in_stock' | 'low_stock' | 'out_of_stock';
-}
-
-interface StockMovement {
-  id: string;
-  type: 'in' | 'out' | 'transfer';
-  itemName: string;
-  sku: string;
-  quantity: number;
-  unit: string;
-  fromWarehouse?: string;
-  toWarehouse?: string;
-  reason: string;
-  createdBy: string;
-  createdAt: string;
-  refCode?: string;
-}
-
-const WAREHOUSES: WarehouseLocation[] = [
-  { id: '1', name: 'Kho Trung tâm Bình Dương', code: 'KHO-BD', address: 'KCN Mỹ Phước 3, Bình Dương', capacity: 5000, usedCapacity: 3750, manager: 'Bùi Văn Nam', status: 'active' },
-  { id: '2', name: 'Kho Chi nhánh TP.HCM', code: 'KHO-HCM', address: 'Q.Thủ Đức, TP.HCM', capacity: 2000, usedCapacity: 1680, manager: 'Nguyễn Thị Hoa', status: 'active' },
-  { id: '3', name: 'Kho Nguyên liệu Đồng Nai', code: 'KHO-DN', address: 'KCN Amata, Đồng Nai', capacity: 3000, usedCapacity: 2100, manager: 'Trần Quốc Hùng', status: 'active' },
-  { id: '4', name: 'Kho Lạnh Vũng Tàu', code: 'KHO-VT', address: 'KCN Phú Mỹ, Bà Rịa VT', capacity: 1500, usedCapacity: 450, manager: 'Lê Văn Tùng', status: 'maintenance' },
-];
-
-const INVENTORY: InventoryItem[] = [
-  { id: '1', sku: 'NVL-001', name: 'Bột mì cao cấp', category: 'Nguyên vật liệu', warehouseId: '3', warehouseName: 'KHO-DN', zone: 'A1', quantity: 2500, minStock: 500, unit: 'kg', lastUpdated: '2026-03-31', status: 'in_stock' },
-  { id: '2', sku: 'NVL-002', name: 'Đường tinh luyện', category: 'Nguyên vật liệu', warehouseId: '3', warehouseName: 'KHO-DN', zone: 'A2', quantity: 180, minStock: 200, unit: 'kg', lastUpdated: '2026-03-30', status: 'low_stock' },
-  { id: '3', sku: 'BB-001', name: 'Hộp carton 30x20x15', category: 'Bao bì', warehouseId: '1', warehouseName: 'KHO-BD', zone: 'B1', quantity: 8500, minStock: 1000, unit: 'cái', lastUpdated: '2026-03-31', status: 'in_stock' },
-  { id: '4', sku: 'TP-001', name: 'Bánh quy vị bơ 200g', category: 'Thành phẩm', warehouseId: '1', warehouseName: 'KHO-BD', zone: 'C1', quantity: 12000, minStock: 2000, unit: 'hộp', lastUpdated: '2026-03-31', status: 'in_stock' },
-  { id: '5', sku: 'TP-002', name: 'Bánh mì sandwich 400g', category: 'Thành phẩm', warehouseId: '2', warehouseName: 'KHO-HCM', zone: 'C2', quantity: 3200, minStock: 500, unit: 'gói', lastUpdated: '2026-03-31', status: 'in_stock' },
-  { id: '6', sku: 'NVL-003', name: 'Phụ gia E330', category: 'Nguyên vật liệu', warehouseId: '3', warehouseName: 'KHO-DN', zone: 'A3', quantity: 0, minStock: 50, unit: 'kg', lastUpdated: '2026-03-28', status: 'out_of_stock' },
-  { id: '7', sku: 'HC-001', name: 'Chất tẩy rửa CN', category: 'Hóa chất', warehouseId: '3', warehouseName: 'KHO-DN', zone: 'D1', quantity: 35, minStock: 20, unit: 'thùng', lastUpdated: '2026-03-29', status: 'in_stock' },
-  { id: '8', sku: 'TP-003', name: 'Kẹo dẻo trái cây 150g', category: 'Thành phẩm', warehouseId: '1', warehouseName: 'KHO-BD', zone: 'C3', quantity: 450, minStock: 500, unit: 'túi', lastUpdated: '2026-03-30', status: 'low_stock' },
-];
-
-const MOVEMENTS: StockMovement[] = [
-  { id: '1', type: 'in', itemName: 'Bột mì cao cấp', sku: 'NVL-001', quantity: 500, unit: 'kg', toWarehouse: 'KHO-DN', reason: 'Nhập từ PO-2026-001', createdBy: 'Admin', createdAt: '2026-03-31T14:30:00', refCode: 'PO-2026-001' },
-  { id: '2', type: 'out', itemName: 'Bánh quy vị bơ 200g', sku: 'TP-001', quantity: 2000, unit: 'hộp', fromWarehouse: 'KHO-BD', reason: 'Xuất cho đơn hàng OMS-1254', createdBy: 'Bùi Văn Nam', createdAt: '2026-03-31T10:15:00', refCode: 'OMS-1254' },
-  { id: '3', type: 'transfer', itemName: 'Bánh mì sandwich 400g', sku: 'TP-002', quantity: 500, unit: 'gói', fromWarehouse: 'KHO-BD', toWarehouse: 'KHO-HCM', reason: 'Điều chuyển bổ sung CN HCM', createdBy: 'Admin', createdAt: '2026-03-30T16:45:00' },
-  { id: '4', type: 'in', itemName: 'Hộp carton 30x20x15', sku: 'BB-001', quantity: 3000, unit: 'cái', toWarehouse: 'KHO-BD', reason: 'Nhập từ PO-2026-002', createdBy: 'Phạm Đức Anh', createdAt: '2026-03-30T09:00:00', refCode: 'PO-2026-002' },
-  { id: '5', type: 'out', itemName: 'Kẹo dẻo trái cây 150g', sku: 'TP-003', quantity: 1200, unit: 'túi', fromWarehouse: 'KHO-BD', reason: 'Xuất cho đại lý DMS-045', createdBy: 'Admin', createdAt: '2026-03-29T11:20:00', refCode: 'DMS-045' },
-];
-
-const STOCK_STATUS: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' }> = {
-  in_stock: { label: 'Đủ hàng', variant: 'success' },
-  low_stock: { label: 'Sắp hết', variant: 'warning' },
-  out_of_stock: { label: 'Hết hàng', variant: 'danger' },
-};
-
-const MOVEMENT_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  in: { label: 'Nhập kho', color: 'var(--emerald)', icon: ArrowDownRight },
-  out: { label: 'Xuất kho', color: 'var(--rose)', icon: ArrowUpRight },
-  transfer: { label: 'Điều chuyển', color: 'var(--sky)', icon: ArrowRightLeft },
-};
+import { Button, Badge, Card, Modal, Input, Select, StatCard, ConfirmModal } from '@/components/ui';
 
 type Tab = 'inventory' | 'warehouses' | 'movements';
 
 export default function WMSPage() {
   const [activeTab, setActiveTab] = useState<Tab>('inventory');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
-  React.useEffect(() => {
-    const fetchInv = async () => {
-      try {
-        const res = await fetch('/api/inventory');
-        const json = await res.json();
-        if (json.success) setInventory(json.data);
-      } catch (err) {
-        console.error('Error fetching inventory', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchInv();
-  }, []);
+  // Modals state
+  const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+  const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [editingWarehouse, setEditingWarehouse] = useState<any | null>(null);
 
-  const categories = [...new Set(inventory.map(i => i.category))];
-  const filteredInventory = inventory.filter((item) => {
-    const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.sku.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchCat = categoryFilter === 'all' || item.category === categoryFilter;
-    return matchSearch && matchCat;
+  // Confirm Modal state
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'danger' | 'success' | 'warning' | 'info';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'danger',
+    onConfirm: () => {},
   });
 
-  const lowStockCount = inventory.filter(i => i.status === 'low_stock').length;
-  const outOfStockCount = inventory.filter(i => i.status === 'out_of_stock').length;
-  const totalItems = inventory.reduce((sum, i) => sum + i.quantity, 0);
+  // Forms
+  const [itemForm, setItemForm] = useState({ name: '', sku: '', category: 'Vật tư', warehouseId: '', quantity: '0', unit: 'Kg', zone: '', minStock: '10', status: 'in_stock' });
+  const [warehouseForm, setWarehouseForm] = useState({ name: '', code: '', address: '', capacity: '1000', status: 'active' });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const [iRes, wRes] = await Promise.all([
+        fetch('/api/inventory'),
+        fetch('/api/warehouses')
+      ]);
+      const iJson = await iRes.json();
+      const wJson = await wRes.json();
+      if (iJson.success) setInventory(iJson.data);
+      if (wJson.success) setWarehouses(wJson.data);
+    } catch (err) { console.error(err); }
+    finally { setIsLoading(false); }
+  };
+
+  // SAVE Handlers
+  const handleSaveItem = async () => {
+    if (editingItem) {
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Cập nhật vật tư',
+        message: `Xác nhận lưu thay đổi cho vật tư ${editingItem.sku}?`,
+        type: 'success',
+        onConfirm: executeSaveItem
+      });
+    } else {
+      executeSaveItem();
+    }
+  };
+
+  const executeSaveItem = async () => {
+    try {
+      const url = editingItem ? `/api/inventory/${editingItem.id}` : '/api/inventory';
+      const method = editingItem ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(itemForm)
+      });
+      if (res.ok) { 
+        setIsItemModalOpen(false); 
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        fetchData(); 
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleSaveWarehouse = async () => {
+    if (editingWarehouse) {
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Cập nhật kho bãi',
+        message: `Xác nhận cập nhật thông tin cho kho ${editingWarehouse.name}?`,
+        type: 'success',
+        onConfirm: executeSaveWarehouse
+      });
+    } else {
+      executeSaveWarehouse();
+    }
+  };
+
+  const executeSaveWarehouse = async () => {
+    try {
+      const url = editingWarehouse ? `/api/warehouses/${editingWarehouse.id}` : '/api/warehouses';
+      const method = editingWarehouse ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(warehouseForm)
+      });
+      if (res.ok) { 
+        setIsWarehouseModalOpen(false); 
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        fetchData(); 
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // DELETE Handlers
+  const confirmDeleteItem = (item: any) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Xóa vật tư',
+      message: `Bạn có chắc chắn muốn xóa vật tư ${item.sku}? Dữ liệu sẽ được ẩn khỏi danh sách tồn kho.`,
+      type: 'danger',
+      onConfirm: () => executeDeleteItem(item.id)
+    });
+  };
+
+  const executeDeleteItem = async (id: string) => {
+    try {
+      const res = await fetch(`/api/inventory/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        fetchData();
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const confirmDeleteWarehouse = (w: any) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Xóa kho bãi',
+      message: `Xác nhận xóa kho ${w.name}? Cảnh báo: Việc xóa kho có thể ảnh hưởng đến các bản ghi tồn kho liên quan.`,
+      type: 'danger',
+      onConfirm: () => executeDeleteWarehouse(w.id)
+    });
+  };
+
+  const executeDeleteWarehouse = async (id: string) => {
+    try {
+      const res = await fetch(`/api/warehouses/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        fetchData();
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // Edit Init
+  const openEditItem = (item: any) => {
+    setEditingItem(item);
+    setItemForm({
+      name: item.name,
+      sku: item.sku,
+      category: item.category || 'Vật tư',
+      warehouseId: item.warehouseId || '',
+      quantity: item.quantity.toString(),
+      unit: item.unit || 'Kg',
+      zone: item.zone || '',
+      minStock: (item.minStock || 10).toString(),
+      status: item.status || 'in_stock'
+    });
+    setIsItemModalOpen(true);
+  };
+
+  const openEditWarehouse = (w: any) => {
+    setEditingWarehouse(w);
+    setWarehouseForm({
+      name: w.name,
+      code: w.code,
+      address: w.address || '',
+      capacity: w.capacity?.toString() || '1000',
+      status: w.status || 'active'
+    });
+    setIsWarehouseModalOpen(true);
+  };
+
+  const renderHeaderButton = () => {
+    if (activeTab === 'inventory') return (
+      <Button icon={Plus} onClick={() => {
+        setEditingItem(null);
+        setItemForm({ name: '', sku: '', category: 'Vật tư', warehouseId: '', quantity: '0', unit: 'Kg', zone: '', minStock: '10', status: 'in_stock' });
+        setIsItemModalOpen(true);
+      }}>
+        Thêm vật tư
+      </Button>
+    );
+    if (activeTab === 'warehouses') return (
+      <Button icon={Plus} onClick={() => {
+        setEditingWarehouse(null);
+        setWarehouseForm({ name: '', code: '', address: '', capacity: '1000', status: 'active' });
+        setIsWarehouseModalOpen(true);
+      }}>
+        Thêm kho
+      </Button>
+    );
+    return null;
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(200, 70%, 45%, 0.12)' }}>
-            <Warehouse size={22} style={{ color: 'hsl(200, 70%, 45%)' }} />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(142, 65%, 42%, 0.12)' }}>
+            <Warehouse size={22} style={{ color: 'hsl(142, 65%, 42%)' }} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">WMS — Quản lý Kho bãi</h1>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Quản lý tồn kho, nhập xuất, điều chuyển</p>
+            <h1 className="text-2xl font-bold tracking-tight">WMS — Quản lý Kho</h1>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Vật tư, kho bãi & vận hành nhập xuất</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" icon={ArrowDownRight}>Nhập kho</Button>
-          <Button variant="outline" icon={ArrowUpRight}>Xuất kho</Button>
-          <Button icon={ArrowRightLeft}>Điều chuyển</Button>
-        </div>
+        {renderHeaderButton()}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-        <StatCard title="Tổng kho" value={WAREHOUSES.filter(w => w.status === 'active').length} icon={Warehouse} color="var(--primary-500)" changeLabel="Đang hoạt động" />
-        <StatCard title="Mặt hàng trong kho" value={totalItems.toLocaleString()} icon={Package} color="var(--accent-500)" />
-        <StatCard title="Sắp hết hàng" value={lowStockCount} icon={AlertTriangle} color="var(--amber)" changeLabel="Cần bổ sung" />
-        <StatCard title="Hết hàng" value={outOfStockCount} icon={AlertTriangle} color="var(--rose)" changeLabel="Cần xử lý gấp" />
-      </div>
-
-      {/* Tabs */}
       <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--slate-100)' }}>
-        {([
-          { key: 'inventory' as Tab, label: 'Tồn kho', icon: Package },
-          { key: 'warehouses' as Tab, label: 'Kho bãi', icon: MapPin },
-          { key: 'movements' as Tab, label: 'Nhập/Xuất', icon: ArrowRightLeft },
-        ]).map((tab) => {
+        {[
+          { key: 'inventory', label: 'Tồn kho', icon: Boxes },
+          { key: 'warehouses', label: 'Kho bãi', icon: Warehouse },
+        ].map((tab) => {
           const Icon = tab.icon;
           return (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            <button key={tab.key} onClick={() => setActiveTab(tab.key as Tab)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
                 ${activeTab === tab.key ? 'bg-white text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
               <Icon size={16} />{tab.label}
@@ -171,237 +247,129 @@ export default function WMSPage() {
         })}
       </div>
 
-      {/* ─── Inventory Tab ─── */}
       {activeTab === 'inventory' && (
-        <div className="space-y-4 animate-fade-in">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex items-center gap-2 flex-1 px-3 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
-              <Search size={16} style={{ color: 'var(--text-muted)' }} />
-              <input type="text" placeholder="Tìm theo tên, SKU..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent text-sm outline-none w-full" />
-            </div>
-            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-3 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] text-sm outline-none">
-              <option value="all">Tất cả danh mục</option>
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-
-          <Card padding="none">
-            {isLoading ? (
-              <div className="p-8 flex flex-col items-center justify-center gap-4 animate-pulse">
-                <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-[var(--primary-400)] animate-spin" />
-                <p className="text-sm text-[var(--text-muted)]">Đang tải biểu tồn kho...</p>
-              </div>
-            ) : filteredInventory.length === 0 ? (
-              <div className="p-12 flex flex-col items-center justify-center">
-                <Package size={40} className="mb-4 text-[var(--text-muted)] opacity-50" />
-                <p className="text-[var(--text-secondary)] font-medium">Không tìm thấy mã hàng</p>
-              </div>
-            ) : (
-              <>
-                {/* ─── Desktop Table View ─── */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr style={{ background: 'var(--slate-50)' }}>
-                        {['SKU', 'Tên hàng', 'Danh mục', 'Kho', 'Vị trí', 'Tồn kho', 'Tối thiểu', 'Trạng thái'].map((h, i) => (
-                          <th key={i} className={`${i >= 5 ? 'text-right' : 'text-left'} text-xs font-semibold uppercase tracking-wider px-5 py-3`} style={{ color: 'var(--text-muted)' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
-                      {filteredInventory.map((item) => {
-                        const stockStatus = STOCK_STATUS[item.status] || STOCK_STATUS.in_stock;
-                        return (
-                          <tr key={item.id} className="group hover:bg-[var(--slate-25)] transition-colors duration-150 cursor-pointer" onClick={() => setSelectedItem(item)}>
-                            <td className="px-5 py-3.5">
-                              <span className="text-sm font-mono font-semibold" style={{ color: 'var(--primary-500)' }}>{item.sku}</span>
-                            </td>
-                            <td className="px-5 py-3.5 text-sm font-medium">{item.name}</td>
-                            <td className="px-5 py-3.5"><Badge>{item.category}</Badge></td>
-                            <td className="px-5 py-3.5 text-sm">{item.warehouseName}</td>
-                            <td className="px-5 py-3.5"><Badge variant="info">{item.zone}</Badge></td>
-                            <td className="px-5 py-3.5 text-right">
-                              <span className="text-sm font-bold">{item.quantity.toLocaleString()}</span>
-                              <span className="text-xs ml-1" style={{ color: 'var(--text-muted)' }}>{item.unit}</span>
-                            </td>
-                            <td className="px-5 py-3.5 text-sm text-right" style={{ color: 'var(--text-muted)' }}>{item.minStock}</td>
-                            <td className="px-5 py-3.5 text-right">
-                              <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* ─── Mobile Card View ─── */}
-                <div className="md:hidden flex flex-col divide-y divide-[var(--border-color)]">
-                  {filteredInventory.map((item) => {
-                    const stockStatus = STOCK_STATUS[item.status] || STOCK_STATUS.in_stock;
-                    return (
-                      <div key={item.id} className="p-4 flex flex-col gap-3 active:bg-[var(--slate-50)] transition-colors cursor-pointer" onClick={() => setSelectedItem(item)}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm" style={{ background: `var(--slate-100)`, color: 'var(--primary-500)' }}>
-                              <Package size={18} />
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-[var(--text-primary)] leading-tight">{item.name}</p>
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <span className="text-xs font-mono font-semibold text-[var(--primary-600)]">{item.sku}</span>
-                                <span className="text-xs text-[var(--text-muted)]">• {item.zone}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
-                        </div>
-                        <div className="flex items-center justify-between text-xs mt-1">
-                          <div className="flex flex-col gap-1 text-[var(--text-muted)] mt-1">
-                            <span>Kho: <span className="text-[var(--text-primary)] font-medium">{item.warehouseName}</span></span>
-                            <span>Min: {item.minStock} {item.unit}</span>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-bold text-lg text-[var(--text-primary)]">{item.quantity.toLocaleString()}</span>
-                            <span className="text-xs text-[var(--text-muted)] ml-1">{item.unit}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-            
-            <div className="flex items-center justify-between px-5 py-3 border-t text-xs" style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
-              Hiển thị {filteredInventory.length} / {inventory.length} mặt hàng
-            </div>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in stagger-children">
+           {inventory.map(item => (
+              <Card key={item.id} hover padding="md" className="group">
+                 <div className="flex items-start justify-between">
+                    <div>
+                       <Badge variant="custom" bg="var(--slate-100)" color="var(--text-muted)">{item.sku}</Badge>
+                       <h3 className="font-bold text-sm mt-1 line-clamp-1">{item.name}</h3>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                       <Badge variant={item.quantity > item.minStock ? 'success' : 'warning'}>{item.status}</Badge>
+                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => openEditItem(item)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                            <Edit size={14} />
+                          </button>
+                          <button onClick={() => confirmDeleteItem(item)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                       </div>
+                    </div>
+                 </div>
+                 <div className="mt-4 flex items-center justify-between pt-3 border-t">
+                    <div>
+                       <p className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Số lượng</p>
+                       <p className="text-lg font-bold text-slate-800">{item.quantity} <span className="text-xs font-normal text-slate-400 uppercase">{item.unit}</span></p>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-[10px] text-[var(--text-muted)] uppercase font-bold">Vị trí</p>
+                       <p className="text-sm font-semibold text-blue-600">{item.warehouseName || 'Chưa gán'}</p>
+                       <p className="text-[10px] text-slate-400">Khu vực: {item.zone || '-'}</p>
+                    </div>
+                 </div>
+              </Card>
+           ))}
         </div>
       )}
 
-      {/* ─── Warehouses Tab ─── */}
       {activeTab === 'warehouses' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in stagger-children">
-          {WAREHOUSES.map((wh) => {
-            const usagePct = Math.round((wh.usedCapacity / wh.capacity) * 100);
-            const usageColor = usagePct > 85 ? 'var(--rose)' : usagePct > 60 ? 'var(--amber)' : 'var(--emerald)';
-            return (
-              <Card key={wh.id} hover padding="lg" className="group">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold">{wh.name}</h3>
-                      <Badge variant={wh.status === 'active' ? 'success' : 'warning'}>{wh.status === 'active' ? 'Hoạt động' : 'Bảo trì'}</Badge>
+           {warehouses.map(w => (
+              <Card key={w.id} hover padding="lg" className="group">
+                 <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                       <div className="w-12 h-12 rounded-xl bg-[var(--primary-50)] text-[var(--primary-600)] flex items-center justify-center">
+                          <Warehouse size={24}/>
+                       </div>
+                       <div>
+                          <h3 className="font-bold text-lg text-slate-800">{w.name}</h3>
+                          <p className="text-sm text-[var(--text-muted)] flex items-center gap-1.5 mt-0.5"><MapPin size={14}/> {w.address || 'Chưa cập nhật địa chỉ'}</p>
+                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <MapPin size={12} style={{ color: 'var(--text-muted)' }} />
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{wh.address}</span>
+                    <div className="flex flex-col items-end gap-3">
+                       <Badge variant="custom" bg="var(--slate-100)" color="var(--text-secondary)">{w.code}</Badge>
+                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => openEditWarehouse(w)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                            <Edit size={14} />
+                          </button>
+                          <button onClick={() => confirmDeleteWarehouse(w)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                       </div>
                     </div>
-                  </div>
-                  <Badge variant="custom" color="var(--primary-500)" bg="var(--primary-50)">{wh.code}</Badge>
-                </div>
-
-                <div className="mt-5">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Sử dụng kho</span>
-                    <span className="text-sm font-bold" style={{ color: usageColor }}>{usagePct}%</span>
-                  </div>
-                  <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--slate-100)' }}>
-                    <div
-                      className="h-full rounded-full transition-all duration-700 ease-out"
-                      style={{ width: `${usagePct}%`, background: `linear-gradient(90deg, ${usageColor}, ${usageColor}cc)` }}
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{wh.usedCapacity.toLocaleString()} / {wh.capacity.toLocaleString()} pallet</span>
-                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Quản lý: {wh.manager}</span>
-                  </div>
-                </div>
+                 </div>
+                 <div className="mt-8">
+                    <div className="flex justify-between text-[11px] mb-2 font-bold uppercase text-slate-400">
+                       <span>Sức chứa</span>
+                       <span className="text-slate-600">{w.itemCount || 0} / {w.capacity} kiện</span>
+                    </div>
+                    <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden shadow-inner">
+                       <div className="h-full bg-emerald-500 transition-all duration-1000 ease-out" 
+                            style={{ width: `${Math.min(100, ((w.itemCount || 0) / (w.capacity || 1000)) * 100)}%` }} />
+                    </div>
+                 </div>
               </Card>
-            );
-          })}
+           ))}
         </div>
       )}
 
-      {/* ─── Movements Tab ─── */}
-      {activeTab === 'movements' && (
-        <div className="space-y-4 animate-fade-in">
-          <Card padding="none">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr style={{ background: 'var(--slate-50)' }}>
-                    {['Loại', 'Mặt hàng', 'Số lượng', 'Từ kho', 'Đến kho', 'Lý do', 'Người thực hiện', 'Thời gian'].map((h, i) => (
-                      <th key={i} className="text-left text-xs font-semibold uppercase tracking-wider px-5 py-3" style={{ color: 'var(--text-muted)' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
-                  {MOVEMENTS.map((mv) => {
-                    const config = MOVEMENT_CONFIG[mv.type];
-                    const MvIcon = config.icon;
-                    return (
-                      <tr key={mv.id} className="hover:bg-[var(--slate-25)] transition-colors">
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: `${config.color}15` }}>
-                              <MvIcon size={14} style={{ color: config.color }} />
-                            </div>
-                            <span className="text-xs font-semibold" style={{ color: config.color }}>{config.label}</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <p className="text-sm font-medium">{mv.itemName}</p>
-                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{mv.sku}</p>
-                        </td>
-                        <td className="px-5 py-3.5 text-sm font-semibold">{mv.quantity} {mv.unit}</td>
-                        <td className="px-5 py-3.5 text-sm">{mv.fromWarehouse || '—'}</td>
-                        <td className="px-5 py-3.5 text-sm">{mv.toWarehouse || '—'}</td>
-                        <td className="px-5 py-3.5">
-                          <p className="text-sm">{mv.reason}</p>
-                          {mv.refCode && <Badge className="mt-1">{mv.refCode}</Badge>}
-                        </td>
-                        <td className="px-5 py-3.5 text-sm">{mv.createdBy}</td>
-                        <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                          {new Date(mv.createdAt).toLocaleString('vi-VN')}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+      {/* Modals */}
+      <Modal isOpen={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} title={editingItem ? "Cập nhật vật tư" : "Thêm vật tư mới"}
+        footer={<><Button variant="ghost" onClick={() => setIsItemModalOpen(false)}>Hủy</Button><Button onClick={handleSaveItem} icon={editingItem ? Save : Plus}>{editingItem ? 'Cập nhật' : 'Lưu vật tư'}</Button></ warm-slate-50>}>
+        <div className="space-y-4">
+           <Input label="Tên vật tư" value={itemForm.name} onChange={e => setItemForm({...itemForm, name: e.target.value})} placeholder="Vải lót..." />
+           <div className="grid grid-cols-2 gap-4">
+              <Input label="SKU" value={itemForm.sku} onChange={e => setItemForm({...itemForm, sku: e.target.value})} placeholder="SKU-XXX" disabled={!!editingItem} />
+              <Select label="Danh mục" value={itemForm.category} onChange={e => setItemForm({...itemForm, category: e.target.value})} options={[{value:'Vật tư', label:'Vật tư'}, {value:'Bán thành phẩm', label:'Bán thành phẩm'}, {value:'Thành phẩm', label:'Thành phẩm'}]} />
+           </div>
+           <div className="grid grid-cols-2 gap-4">
+              <Select label="Kho lưu trữ" value={itemForm.warehouseId} onChange={e => setItemForm({...itemForm, warehouseId: e.target.value})} options={warehouses.map(w => ({ value: w.id, label: w.name }))} />
+              <Input label="Khu vực (Zone)" value={itemForm.zone} onChange={e => setItemForm({...itemForm, zone: e.target.value})} placeholder="Khu A1" />
+           </div>
+           <div className="grid grid-cols-2 gap-4">
+              <Input label="Số lượng" type="number" value={itemForm.quantity} onChange={e => setItemForm({...itemForm, quantity: e.target.value})} />
+              <Input label="Định mức tồn tối thiểu" type="number" value={itemForm.minStock} onChange={e => setItemForm({...itemForm, minStock: e.target.value})} />
+           </div>
+           <div className="grid grid-cols-2 gap-4">
+              <Select label="Đơn vị" value={itemForm.unit} onChange={e => setItemForm({...itemForm, unit: e.target.value})} options={[{value:'Kg', label:'Kg'}, {value:'Cuộn', label:'Cuộn'}, {value:'Mét', label:'Mét'}, {value:'Cái', label:'Cái'}]} />
+              <Select label="Trạng thái" value={itemForm.status} onChange={e => setItemForm({...itemForm, status: e.target.value})} options={[{value:'in_stock', label:'Sẵn sàng'}, {value:'low_stock', label:'Sắp hết'}, {value:'out_of_stock', label:'Hết hàng'}]} />
+           </div>
         </div>
-      )}
-
-      {/* ─── Inventory Detail Modal ─── */}
-      <Modal
-        isOpen={!!selectedItem}
-        onClose={() => setSelectedItem(null)}
-        title={selectedItem?.name || ''}
-        description={`SKU: ${selectedItem?.sku}`}
-        footer={<Button variant="ghost" onClick={() => setSelectedItem(null)}>Đóng</Button>}
-      >
-        {selectedItem && (
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: 'Danh mục', value: selectedItem.category },
-              { label: 'Kho', value: selectedItem.warehouseName },
-              { label: 'Vị trí', value: selectedItem.zone },
-              { label: 'Tồn kho', value: `${selectedItem.quantity.toLocaleString()} ${selectedItem.unit}` },
-              { label: 'Tối thiểu', value: `${selectedItem.minStock} ${selectedItem.unit}` },
-              { label: 'Cập nhật', value: new Date(selectedItem.lastUpdated).toLocaleDateString('vi-VN') },
-            ].map((f) => (
-              <div key={f.label} className="p-3 rounded-xl" style={{ background: 'var(--slate-50)' }}>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{f.label}</p>
-                <p className="text-sm font-semibold mt-1">{f.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
       </Modal>
+
+      <Modal isOpen={isWarehouseModalOpen} onClose={() => setIsWarehouseModalOpen(false)} title={editingWarehouse ? "Cập nhật kho bãi" : "Thêm kho bãi mới"}
+        footer={<><Button variant="ghost" onClick={() => setIsWarehouseModalOpen(false)}>Hủy</Button><Button onClick={handleSaveWarehouse} icon={editingWarehouse ? Save : Plus}>{editingWarehouse ? 'Cập nhật' : 'Lưu kho'}</Button></ warm-slate-50>}>
+        <div className="space-y-4">
+           <Input label="Tên kho" value={warehouseForm.name} onChange={e => setWarehouseForm({...warehouseForm, name: e.target.value})} placeholder="Kho A..." />
+           <Input label="Mã kho" value={warehouseForm.code} onChange={e => setWarehouseForm({...warehouseForm, code: e.target.value})} placeholder="WH-01" disabled={!!editingWarehouse} />
+           <Input label="Địa chỉ" value={warehouseForm.address} onChange={e => setWarehouseForm({...warehouseForm, address: e.target.value})} />
+           <div className="grid grid-cols-2 gap-4">
+              <Input label="Sức chứa tối đa (kiện)" type="number" value={warehouseForm.capacity} onChange={e => setWarehouseForm({...warehouseForm, capacity: e.target.value})} />
+              <Select label="Trạng thái" value={warehouseForm.status} onChange={e => setWarehouseForm({...warehouseForm, status: e.target.value})} options={[{value:'active', label:'Hoạt động'}, {value:'maintenance', label:'Bảo trì'}, {value:'full', label:'Đã đầy'}]} />
+           </div>
+        </div>
+      </Modal>
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+      />
     </div>
   );
 }

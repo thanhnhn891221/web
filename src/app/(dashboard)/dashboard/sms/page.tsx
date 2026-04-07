@@ -1,166 +1,209 @@
 'use client';
 
-import React, { useState } from 'react';
-import { TrendingUp, Users, DollarSign, Target, Search, Phone, Mail, MapPin, Star, ShoppingBag } from 'lucide-react';
-import { Button, Badge, Card, Modal, StatCard } from '@/components/ui';
-
-const TIER_COLORS: Record<string, { label: string; color: string }> = {
-  bronze: { label: 'Bronze', color: '#CD7F32' }, silver: { label: 'Silver', color: '#C0C0C0' },
-  gold: { label: 'Gold', color: '#FFD700' }, platinum: { label: 'Platinum', color: '#B0B0B0' },
-};
-
-const STAGE_MAP: Record<string, { label: string; variant: 'default' | 'info' | 'warning' | 'success' | 'danger'; pct: number }> = {
-  new: { label: 'Lead mới', variant: 'default', pct: 10 },
-  contacted: { label: 'Đã liên hệ', variant: 'info', pct: 30 },
-  qualified: { label: 'Đủ điều kiện', variant: 'info', pct: 50 },
-  proposal: { label: 'Đã gửi đề xuất', variant: 'warning', pct: 75 },
-  won: { label: 'Chốt thành công', variant: 'success', pct: 100 },
-  lost: { label: 'Thất bại', variant: 'danger', pct: 0 },
-};
-
-type Tab = 'customers' | 'pipeline';
+import React, { useState, useEffect } from 'react';
+import {
+  TrendingUp, Plus, Search, Filter, Eye, Edit, Trash2,
+  Users, Target, BarChart3, Phone, Mail, Clock,
+  Calendar, Award, MoreHorizontal, User, Save
+} from 'lucide-react';
+import { Button, Badge, Card, Modal, Input, Select, StatCard, ConfirmModal } from '@/components/ui';
 
 export default function SMSPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('customers');
-  const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<any | null>(null);
-
-  const [customers, setCustomers] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Modals state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState<any | null>(null);
 
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [resCust, resLeads] = await Promise.all([
-          fetch('/api/customers'),
-          fetch('/api/leads')
-        ]);
-        const jsonCust = await resCust.json();
-        const jsonLeads = await resLeads.json();
-        
-        if (jsonCust.success) setCustomers(jsonCust.data);
-        if (jsonLeads.success) setLeads(jsonLeads.data);
-      } catch (err) {
-        console.error('Error fetching SMS data:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Confirm Modal state
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'danger' | 'success' | 'warning' | 'info';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'danger',
+    onConfirm: () => {},
+  });
+
+  // Form state
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', source: 'Website', status: 'new', potential: 'medium', note: '' });
+
+  useEffect(() => {
     fetchData();
   }, []);
 
-  const fmt = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
-  // Defaulting to 0 since our fresh mock doesn't have totalRevenue populated for all.
-  const totalRev = customers.reduce((s, c) => s + (c.rating || 0), 0); // Temporary using rating or 0
-  const pipeVal = leads.filter(p => !p.status?.startsWith('lost')).reduce((s, p) => s + (p.value || 0), 0);
-  const filtered = customers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/leads');
+      const json = await res.json();
+      if (json.success) setLeads(json.data);
+    } catch (err) { console.error(err); }
+    finally { setIsLoading(false); }
+  };
+
+  // SAVE Handler
+  const handleSave = async () => {
+    if (editingLead) {
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Cập nhật Lead',
+        message: `Xác nhận lưu thay đổi cho lead ${editingLead.name}?`,
+        type: 'success',
+        onConfirm: executeSave
+      });
+    } else {
+      executeSave();
+    }
+  };
+
+  const executeSave = async () => {
+    try {
+      const url = editingLead ? `/api/leads/${editingLead.id}` : '/api/leads';
+      const method = editingLead ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) { 
+        setIsModalOpen(false); 
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        fetchData(); 
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // DELETE Handler
+  const confirmDelete = (lead: any) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Xóa Lead',
+      message: `Bạn có chắc chắn muốn xóa lead ${lead.name}? Dữ liệu sẽ được ẩn khỏi hệ thống (Soft Delete).`,
+      type: 'danger',
+      onConfirm: () => executeDelete(lead.id)
+    });
+  };
+
+  const executeDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/leads/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        fetchData();
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // Edit Init
+  const openEdit = (lead: any) => {
+    setEditingLead(lead);
+    setFormData({
+      name: lead.name,
+      email: lead.email || '',
+      phone: lead.phone || '',
+      source: lead.source || 'Website',
+      status: lead.status,
+      potential: lead.potential || lead.priority || 'medium',
+      note: lead.note || lead.notes || ''
+    });
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(15, 80%, 55%, 0.12)' }}>
-            <TrendingUp size={22} style={{ color: 'hsl(15, 80%, 55%)' }} />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(14, 90%, 55%, 0.12)' }}>
+            <TrendingUp size={22} style={{ color: 'hsl(14, 90%, 55%)' }} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">SMS — Quản lý Bán hàng</h1>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Doanh số, khách hàng, pipeline & loyalty</p>
+            <h1 className="text-2xl font-bold tracking-tight">SMS — Quản lý Sale thị trường</h1>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Đội ngũ sale, khách hàng tiềm năng & hiệu suất doanh số</p>
           </div>
         </div>
-        <Button icon={Users}>Thêm khách hàng</Button>
+        <Button icon={Plus} onClick={() => {
+          setEditingLead(null);
+          setFormData({ name: '', email: '', phone: '', source: 'Website', status: 'new', potential: 'medium', note: '' });
+          setIsModalOpen(true);
+        }}>
+          Tạo Lead
+        </Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-        <StatCard title="Khách hàng" value={customers.length} icon={Users} color="var(--primary-500)" />
-        <StatCard title="Leads Tiềm năng" value={leads.length} icon={Users} color="var(--emerald)" />
-        <StatCard title="Pipeline" value={fmt(pipeVal)} icon={Target} color="var(--amber)" changeLabel="Đang chờ chốt" />
-        <StatCard title="Tỷ lệ chốt" value="62%" icon={TrendingUp} color="var(--accent-500)" change={8.5} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in stagger-children">
+        <StatCard title="Đội ngũ Sale" value="12" icon={Users} color="var(--primary-500)" />
+        <StatCard title="Lead thị trường" value={leads.length} icon={Award} color="var(--amber)" />
+        <StatCard title="Tỉ lệ chốt" value="34%" icon={Target} color="var(--emerald)" />
+        <StatCard title="KPI tháng" value="85%" icon={BarChart3} color="var(--rose)" />
       </div>
 
-      <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--slate-100)' }}>
-        {([{ key: 'customers' as Tab, label: 'Khách hàng', icon: Users }, { key: 'pipeline' as Tab, label: 'Pipeline', icon: Target }]).map(tab => {
-          const Icon = tab.icon;
-          return (<button key={tab.key} onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === tab.key ? 'bg-white text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
-            <Icon size={16} />{tab.label}</button>);
-        })}
-      </div>
-
-      {isLoading ? (
-        <div className="p-8 flex flex-col items-center justify-center gap-4 animate-pulse">
-          <div className="w-8 h-8 rounded-full border-2 border-t-transparent border-[var(--primary-400)] animate-spin" />
-          <p className="text-sm text-[var(--text-muted)]">Đang kết nối khối Thị Trường...</p>
-        </div>
-      ) : (
-        <>
-          {activeTab === 'customers' && (
-            <div className="space-y-4 animate-fade-in">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)]">
-                <Search size={16} style={{ color: 'var(--text-muted)' }} />
-                <input type="text" placeholder="Tìm khách hàng..." value={search} onChange={e => setSearch(e.target.value)} className="bg-transparent text-sm outline-none w-full" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {leads.map(lead => (
+           <Card key={lead.id} hover padding="md">
+              <div className="flex items-start justify-between">
+                <div>
+                   <h3 className="font-bold text-sm">{lead.name}</h3>
+                   <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{lead.code} · {lead.source}</p>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                   <Badge variant={lead.status === 'new' ? 'info' : lead.status === 'contacted' ? 'warning' : 'success'}>{lead.status}</Badge>
+                   <div className="flex items-center gap-1">
+                      <button onClick={() => openEdit(lead)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                        <Edit size={14} />
+                      </button>
+                      <button onClick={() => confirmDelete(lead)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                   </div>
+                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
-                {filtered.map(c => {
-                  const t = TIER_COLORS[c.tier] || TIER_COLORS.bronze;
-                  return (
-                    <Card key={c.id} hover padding="lg" className="group cursor-pointer" onClick={() => setSelected(c)}>
-                      <div className="flex items-start justify-between">
-                        <div><p className="text-xs font-mono font-semibold" style={{ color: 'var(--primary-500)' }}>{c.type}</p>
-                          <h3 className="text-base font-semibold mt-1">{c.name}</h3></div>
-                        <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold" style={{ background: `${t.color}20`, color: t.color }}><Star size={12} /> {t.label}</div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
-                        <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Email</p><p className="text-sm font-semibold truncate">{c.email}</p></div>
-                        <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Số điện thoại</p><p className="text-sm font-semibold truncate">{c.phone}</p></div>
-                      </div>
-                    </Card>);
-                })}
+              <div className="mt-4 space-y-2">
+                 <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]"><Mail size={12}/> {lead.email || 'N/A'}</div>
+                 <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]"><Phone size={12}/> {lead.phone || 'N/A'}</div>
               </div>
-            </div>
-          )}
+              <div className="mt-4 flex items-center justify-between pt-3 border-t">
+                 <Badge variant="custom" bg="var(--slate-100)" color="var(--text-muted)">{lead.potential || lead.priority}</Badge>
+                 <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Created {new Date(lead.createdAt).toLocaleDateString('vi-VN')}</span>
+              </div>
+           </Card>
+        ))}
+      </div>
 
-          {activeTab === 'pipeline' && (
-            <div className="space-y-3 animate-fade-in">
-              {leads.map(deal => {
-                const stage = STAGE_MAP[deal.status] || STAGE_MAP.new;
-                return (
-                  <Card key={deal.id} hover padding="lg">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center flex-wrap gap-2"><h3 className="text-sm font-semibold">{deal.company || deal.name}</h3><Badge variant={stage.variant}>{stage.label}</Badge></div>
-                        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Liên hệ: {deal.name} ({deal.phone})</p>
-                        <div className="flex flex-wrap items-center gap-4 mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                          <span>Ngày tạo: {new Date(deal.createdAt).toLocaleDateString('vi-VN')}</span><span>Mức phí: <strong className="text-[var(--text-primary)]">{deal.priority}</strong></span>
-                        </div>
-                      </div>
-                      <p className="text-lg font-bold" style={{ color: 'var(--primary-500)' }}>{fmt(deal.value)}</p>
-                    </div>
-                    <div className="mt-4 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--slate-100)' }}>
-                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${stage.pct}%`, background: deal.status === 'won' ? 'var(--emerald)' : 'var(--primary-500)' }} />
-                    </div>
-                  </Card>);
-              })}
-            </div>
-          )}
-        </>
-      )}
-
-      <Modal isOpen={!!selected} onClose={() => setSelected(null)} title={selected?.name || ''} description={`Loại: ${selected?.type}`}
-        footer={<Button variant="ghost" onClick={() => setSelected(null)}>Đóng</Button>}>
-        {selected && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[{ l: 'Số điện thoại', v: selected.phone, i: Phone },
-              { l: 'Email', v: selected.email, i: Mail }, 
-              { l: 'Ngày tạo', v: new Date(selected.createdAt).toLocaleDateString('vi-VN'), i: ShoppingBag }
-            ].map((f, idx) => { const I = f.i; return (
-              <div key={idx} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'var(--slate-50)' }}>
-                <I size={16} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
-                <div className="min-w-0"><p className="text-xs" style={{ color: 'var(--text-muted)' }}>{f.l}</p><p className="text-sm font-medium mt-0.5 truncate w-full">{f.v}</p></div>
-              </div>); })}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingLead ? "Chỉnh sửa Lead" : "Tạo Lead tiềm năng mới"}
+        footer={<><Button variant="ghost" onClick={() => setIsModalOpen(false)}>Hủy</Button><Button onClick={handleSave} icon={editingLead ? Save : Plus}>{editingLead ? 'Cập nhật' : 'Lưu Lead'}</Button></>}>
+        <div className="space-y-4">
+          <Input label="Tên khách hàng tiềm năng" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Nguyễn Văn A..." />
+          <div className="grid grid-cols-2 gap-4">
+             <Input label="Email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+             <Input label="Số điện thoại" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
           </div>
-        )}
+          <div className="grid grid-cols-2 gap-4">
+            <Select label="Nguồn Lead" value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} 
+              options={[{value:'Website', label:'Website'}, {value:'Ads', label:'Quảng cáo'}, {value:'Offline', label:'Trực tiếp'}]} />
+            <Select label="Mức độ tiềm năng" value={formData.potential} onChange={e => setFormData({...formData, potential: e.target.value})}
+              options={[{value:'low', label:'Thấp'}, {value:'medium', label:'Trung bình'}, {value:'high', label:'Cao'}]} />
+          </div>
+          <Select label="Trạng thái" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} 
+              options={[{value:'new', label:'Mới'}, {value:'contacted', label:'Đã liên hệ'}, {value:'qualified', label:'Đủ điều kiện'}, {value:'lost', label:'Thất bại'}]} />
+          <Input label="Ghi chú" value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} />
+        </div>
       </Modal>
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+      />
     </div>
   );
 }

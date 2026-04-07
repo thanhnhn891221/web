@@ -1,85 +1,211 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Megaphone, Target, TrendingUp, Users, Eye, Calendar, DollarSign, BarChart3, Zap } from 'lucide-react';
-import { Button, Badge, Card, StatCard } from '@/components/ui';
-
-const CAMPAIGNS = [
-  { id: '1', name: 'Flash Sale Tết Nguyên Đán', channel: 'Facebook + TikTok', budget: 50000000, spent: 42000000, leads: 1250, conversions: 312, status: 'completed', period: '01/01 — 15/02/2026' },
-  { id: '2', name: 'Ra mắt Bánh mì Sandwich mới', channel: 'Google Ads + Instagram', budget: 30000000, spent: 18500000, leads: 680, conversions: 145, status: 'active', period: '15/03 — 30/04/2026' },
-  { id: '3', name: 'Chương trình Khách hàng Thân thiết', channel: 'Email + SMS', budget: 15000000, spent: 8200000, leads: 420, conversions: 210, status: 'active', period: '01/03 — 31/05/2026' },
-  { id: '4', name: 'Quảng bá Nước ép trái cây Mùa hè', channel: 'TikTok + KOL', budget: 80000000, spent: 0, leads: 0, conversions: 0, status: 'planned', period: '01/05 — 30/06/2026' },
-  { id: '5', name: 'SEO Website + Content Marketing', channel: 'SEO + Blog', budget: 20000000, spent: 12000000, leads: 890, conversions: 67, status: 'active', period: '01/01 — 31/12/2026' },
-];
-
-const STATUS_MAP: Record<string, { label: string; variant: 'success' | 'info' | 'default' }> = {
-  completed: { label: 'Hoàn thành', variant: 'success' }, active: { label: 'Đang chạy', variant: 'info' }, planned: { label: 'Lên kế hoạch', variant: 'default' },
-};
+import React, { useState, useEffect } from 'react';
+import {
+  Megaphone, Plus, Search, Filter, Eye, Edit, Trash2,
+  TrendingUp, Users, DollarSign, Target, BarChart3,
+  Calendar, Layers, MoreHorizontal, MousePointer2,
+  CheckCircle2, AlertCircle, Save
+} from 'lucide-react';
+import { Button, Badge, Card, Modal, Input, Select, StatCard, ConfirmModal } from '@/components/ui';
 
 export default function MMSPage() {
-  const fmt = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
-  const totalBudget = CAMPAIGNS.reduce((s, c) => s + c.budget, 0);
-  const totalLeads = CAMPAIGNS.reduce((s, c) => s + c.leads, 0);
-  const totalConv = CAMPAIGNS.reduce((s, c) => s + c.conversions, 0);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Modals state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<any | null>(null);
+
+  // Confirm Modal state
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'danger' | 'success' | 'warning' | 'info';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'danger',
+    onConfirm: () => {},
+  });
+
+  // Form state
+  const [formData, setFormData] = useState({ name: '', channel: 'Facebook', budget: '0', spent: '0', status: 'planned', period: '' });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/campaigns');
+      const json = await res.json();
+      if (json.success) setCampaigns(json.data);
+    } catch (err) { console.error(err); }
+    finally { setIsLoading(false); }
+  };
+
+  // SAVE Handler
+  const handleSave = async () => {
+    if (editingCampaign) {
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Cập nhật chiến dịch',
+        message: `Xác nhận lưu thay đổi cho chiến dịch ${editingCampaign.name}?`,
+        type: 'success',
+        onConfirm: executeSave
+      });
+    } else {
+      executeSave();
+    }
+  };
+
+  const executeSave = async () => {
+    try {
+      const url = editingCampaign ? `/api/campaigns/${editingCampaign.id}` : '/api/campaigns';
+      const method = editingCampaign ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) { 
+        setIsModalOpen(false); 
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        fetchData(); 
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // DELETE Handler
+  const confirmDelete = (campaign: any) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Xóa chiến dịch',
+      message: `Bạn có chắc chắn muốn xóa chiến dịch ${campaign.name}? Dữ liệu sẽ được ẩn khỏi hệ thống (Soft Delete).`,
+      type: 'danger',
+      onConfirm: () => executeDelete(campaign.id)
+    });
+  };
+
+  const executeDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/campaigns/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        fetchData();
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // Edit Init
+  const openEdit = (campaign: any) => {
+    setEditingCampaign(campaign);
+    setFormData({
+      name: campaign.name,
+      channel: campaign.channel || 'Facebook',
+      budget: campaign.budget.toString(),
+      spent: campaign.spent.toString(),
+      status: campaign.status,
+      period: campaign.period || ''
+    });
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(320, 75%, 55%, 0.12)' }}>
-            <Megaphone size={22} style={{ color: 'hsl(320, 75%, 55%)' }} />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(330, 80%, 60%, 0.12)' }}>
+            <Megaphone size={22} style={{ color: 'hsl(330, 80%, 60%)' }} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">MMS — Quản lý Marketing</h1>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Chiến dịch, phễu marketing, đa nền tảng</p>
+            <h1 className="text-2xl font-bold tracking-tight">MMS — Marketing Management</h1>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Chiến dịch, ngân sách & hiệu quả Lead Funnel</p>
           </div>
         </div>
-        <Button icon={Megaphone}>Tạo chiến dịch</Button>
+        <Button icon={Plus} onClick={() => {
+          setEditingCampaign(null);
+          setFormData({ name: '', channel: 'Facebook', budget: '0', spent: '0', status: 'planned', period: '' });
+          setIsModalOpen(true);
+        }}>
+          Tạo chiến dịch
+        </Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-        <StatCard title="Chiến dịch" value={CAMPAIGNS.filter(c => c.status === 'active').length} icon={Megaphone} color="hsl(320, 75%, 55%)" changeLabel="Đang chạy" />
-        <StatCard title="Ngân sách tổng" value={fmt(totalBudget)} icon={DollarSign} color="var(--primary-500)" />
-        <StatCard title="Tổng Leads" value={totalLeads.toLocaleString()} icon={Users} color="var(--accent-500)" />
-        <StatCard title="Conversions" value={totalConv} icon={Target} color="var(--emerald)" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in stagger-children">
+        <StatCard title="Chiến dịch" value={campaigns.length} icon={Target} color="var(--primary-500)" />
+        <StatCard title="Leads Hôm nay" value="156" icon={Users} color="var(--accent-500)" />
+        <StatCard title="Ngân sách còn" value="450M" icon={DollarSign} color="var(--emerald)" />
+        <StatCard title="ROAS" value="4.2x" icon={TrendingUp} color="var(--rose)" />
       </div>
 
-      <div className="space-y-4 animate-fade-in stagger-children">
-        {CAMPAIGNS.map(camp => {
-          const st = STATUS_MAP[camp.status];
-          const spentPct = camp.budget > 0 ? Math.round((camp.spent / camp.budget) * 100) : 0;
-          const convRate = camp.leads > 0 ? ((camp.conversions / camp.leads) * 100).toFixed(1) : '0';
-          return (
-            <Card key={camp.id} hover padding="lg" className="group">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {campaigns.map(c => (
+           <Card key={c.id} hover padding="lg">
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-semibold">{camp.name}</h3>
-                    <Badge variant={st.variant}>{st.label}</Badge>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                    <span className="flex items-center gap-1"><Zap size={12} /> {camp.channel}</span>
-                    <span className="flex items-center gap-1"><Calendar size={12} /> {camp.period}</span>
-                  </div>
+                   <h3 className="font-bold text-base">{c.name}</h3>
+                   <p className="text-xs text-[var(--text-muted)] mt-1">{c.channel} · {c.period || 'Mọi lúc'}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Tỷ lệ chuyển đổi</p>
-                  <p className="text-lg font-bold" style={{ color: 'var(--emerald)' }}>{convRate}%</p>
+                <div className="flex flex-col items-end gap-2">
+                   <Badge variant={c.status === 'active' ? 'success' : 'info'}>{c.status}</Badge>
+                   <div className="flex items-center gap-1">
+                      <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                        <Edit size={14} />
+                      </button>
+                      <button onClick={() => confirmDelete(c)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
-                <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Ngân sách</p><p className="text-sm font-bold">{fmt(camp.budget)}</p></div>
-                <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Đã chi ({spentPct}%)</p><p className="text-sm font-bold">{fmt(camp.spent)}</p></div>
-                <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Leads</p><p className="text-sm font-bold">{camp.leads.toLocaleString()}</p></div>
-                <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Conversions</p><p className="text-sm font-bold">{camp.conversions}</p></div>
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                 <div>
+                    <p className="text-[10px] uppercase font-bold text-[var(--text-muted)]">Ngân sách</p>
+                    <p className="text-sm font-bold">{(c.budget / 1e6).toFixed(1)}M</p>
+                 </div>
+                 <div>
+                    <p className="text-[10px] uppercase font-bold text-[var(--text-muted)]">Chi phí</p>
+                    <p className="text-sm font-bold text-[var(--rose)]">{(c.spent / 1e6).toFixed(1)}M</p>
+                 </div>
               </div>
-              <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--slate-100)' }}>
-                <div className="h-full rounded-full" style={{ width: `${spentPct}%`, background: spentPct > 90 ? 'var(--rose)' : 'var(--primary-500)' }} />
+              <div className="mt-4 grid grid-cols-2 gap-4 pt-3 border-t">
+                 <div className="flex items-center gap-1.5"><Users size={12} className="text-[var(--primary-500)]"/><span className="text-xs font-semibold">{c.leads || 0} Leads</span></div>
+                 <div className="flex items-center gap-1.5"><MousePointer2 size={12} className="text-[var(--emerald)]"/><span className="text-xs font-semibold">{c.conversions || 0} Sales</span></div>
               </div>
-            </Card>
-          );
-        })}
+           </Card>
+        ))}
       </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingCampaign ? "Chỉnh sửa chiến dịch" : "Tạo chiến dịch Marketing mới"}
+        footer={<><Button variant="ghost" onClick={() => setIsModalOpen(false)}>Hủy</Button><Button onClick={handleSave} icon={editingCampaign ? Save : Plus}>{editingCampaign ? 'Cập nhật' : 'Lưu chiến dịch'}</Button></>}>
+        <div className="space-y-4">
+          <Input label="Tên chiến dịch" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Chiến dịch Tết 2026..." />
+          <Select label="Kênh quảng cáo" value={formData.channel} onChange={e => setFormData({...formData, channel: e.target.value})} 
+            options={[{value:'Facebook', label:'Facebook'}, {value:'Google', label:'Google Ads'}, {value:'TikTok', label:'TikTok'}, {value:'Offline', label:'Offline'}]} />
+          <div className="grid grid-cols-2 gap-4">
+             <Input label="Ngân sách (VNĐ)" type="number" value={formData.budget} onChange={e => setFormData({...formData, budget: e.target.value})} />
+             <Input label="Đã chi (VNĐ)" type="number" value={formData.spent} onChange={e => setFormData({...formData, spent: e.target.value})} />
+          </div>
+          <Select label="Trạng thái" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} 
+            options={[{value:'planned', label:'Lên kế hoạch'}, {value:'active', label:'Đang chạy'}, {value:'completed', label:'Hoàn thành'}]} />
+          <Input label="Giai đoạn (Từ - Đến)" value={formData.period} onChange={e => setFormData({...formData, period: e.target.value})} placeholder="01/01 - 31/01/2026" />
+        </div>
+      </Modal>
+
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+      />
     </div>
   );
 }

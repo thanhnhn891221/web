@@ -1,24 +1,132 @@
 'use client';
 
-import React from 'react';
-import { Network, MapPin, Users, TrendingUp, DollarSign, ShoppingBag, Star, Phone, BarChart3 } from 'lucide-react';
-import { Button, Badge, Card, StatCard } from '@/components/ui';
+import React, { useState, useEffect } from 'react';
+import { Network, MapPin, Users, TrendingUp, DollarSign, Plus, Search, Phone, Star, MoreHorizontal, LayoutDashboard, Route, Edit, Trash2, Save } from 'lucide-react';
+import { Button, Badge, Card, Modal, Input, Select, StatCard, ConfirmModal } from '@/components/ui';
 
-const DISTRIBUTORS = [
-  { id: '1', code: 'DL-001', name: 'Đại lý Phương Nam', region: 'Đồng Nai', type: 'Cấp 1', contact: 'Phạm Văn Long', phone: '0251-234-5678', revenue: 320000000, orders: 45, stores: 12, rating: 4.5 },
-  { id: '2', code: 'DL-002', name: 'NPP Miền Tây Sông Hậu', region: 'Cần Thơ', type: 'Cấp 1', contact: 'Trần Thị Bích', phone: '0292-345-6789', revenue: 580000000, orders: 78, stores: 25, rating: 4.7 },
-  { id: '3', code: 'DL-003', name: 'Đại lý Tây Nguyên', region: 'Đắk Lắk', type: 'Cấp 2', contact: 'Nguyễn Văn Hùng', phone: '0262-456-7890', revenue: 150000000, orders: 22, stores: 8, rating: 4.2 },
-  { id: '4', code: 'DL-004', name: 'NPP Bắc Trung Bộ', region: 'Đà Nẵng', type: 'Cấp 1', contact: 'Lê Quốc Việt', phone: '0236-567-8901', revenue: 420000000, orders: 56, stores: 18, rating: 4.6 },
-  { id: '5', code: 'DL-005', name: 'Đại lý Sài Gòn Food', region: 'TP.HCM', type: 'Cấp 1', contact: 'Hoàng Minh Tuấn', phone: '028-678-9012', revenue: 890000000, orders: 112, stores: 35, rating: 4.8 },
-  { id: '6', code: 'DL-006', name: 'Đại lý Hà Nội Express', region: 'Hà Nội', type: 'Cấp 2', contact: 'Vũ Thị Ngọc', phone: '024-789-0123', revenue: 280000000, orders: 34, stores: 10, rating: 4.3 },
-];
-
-const TYPE_COLORS: Record<string, string> = { 'Cấp 1': 'var(--emerald)', 'Cấp 2': 'var(--amber)' };
+type Tab = 'distributors' | 'routes';
 
 export default function DMSPage() {
-  const fmt = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
-  const totalRev = DISTRIBUTORS.reduce((s, d) => s + d.revenue, 0);
-  const totalStores = DISTRIBUTORS.reduce((s, d) => s + d.stores, 0);
+  const [activeTab, setActiveTab] = useState<Tab>('distributors');
+  const [distributors, setDistributors] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Modals state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingDistributor, setEditingDistributor] = useState<any | null>(null);
+
+  // Confirm Modal state
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'danger' | 'success' | 'warning' | 'info';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'danger',
+    onConfirm: () => {},
+  });
+
+  // Form state
+  const [formData, setFormData] = useState({ name: '', region: '', type: 'Cấp 1', contact: '', phone: '', code: '', status: 'active' });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/distributors');
+      const json = await res.json();
+      if (json.success) setDistributors(json.data);
+    } catch (err) { console.error(err); }
+    finally { setIsLoading(false); }
+  };
+
+  // SAVE Handler
+  const handleSave = async () => {
+    if (editingDistributor) {
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Cập nhật đại lý',
+        message: `Xác nhận lưu thay đổi cho đại lý ${editingDistributor.name}?`,
+        type: 'success',
+        onConfirm: executeSave
+      });
+    } else {
+      executeSave();
+    }
+  };
+
+  const executeSave = async () => {
+    try {
+      const url = editingDistributor ? `/api/distributors/${editingDistributor.id}` : '/api/distributors';
+      const method = editingDistributor ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) { 
+        setIsModalOpen(false); 
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        fetchData(); 
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // DELETE Handler
+  const confirmDelete = (d: any) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Xóa đại lý',
+      message: `Bạn có chắc chắn muốn xóa đại lý ${d.name}? Dữ liệu sẽ được ẩn khỏi hệ thống (Soft Delete).`,
+      type: 'danger',
+      onConfirm: () => executeDelete(d.id)
+    });
+  };
+
+  const executeDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/distributors/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        fetchData();
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // Edit Init
+  const openEdit = (d: any) => {
+    setEditingDistributor(d);
+    setFormData({
+      name: d.name,
+      region: d.region || '',
+      type: d.type || 'Cấp 1',
+      contact: d.contact || '',
+      phone: d.phone || '',
+      code: d.code || '',
+      status: d.status || 'active'
+    });
+    setIsModalOpen(true);
+  };
+
+  const renderHeaderButton = () => {
+    if (activeTab === 'distributors') return (
+      <Button icon={Plus} onClick={() => {
+        setEditingDistributor(null);
+        setFormData({ name: '', region: '', type: 'Cấp 1', contact: '', phone: '', code: '', status: 'active' });
+        setIsModalOpen(true);
+      }}>
+        Thêm đại lý
+      </Button>
+    );
+    return null;
+  };
 
   return (
     <div className="space-y-6">
@@ -29,48 +137,99 @@ export default function DMSPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">DMS — Quản lý Phân phối</h1>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Mạng lưới đại lý, kênh phân phối, vùng miền</p>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Đại lý, tuyến đường & hiệu quả đo lường</p>
           </div>
         </div>
-        <Button icon={Network}>Thêm đại lý</Button>
+        {renderHeaderButton()}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-        <StatCard title="Tổng đại lý" value={DISTRIBUTORS.length} icon={Network} color="hsl(260, 55%, 52%)" />
-        <StatCard title="Điểm bán" value={totalStores} icon={MapPin} color="var(--accent-500)" />
-        <StatCard title="Doanh thu kênh" value={fmt(totalRev)} icon={DollarSign} color="var(--emerald)" />
-        <StatCard title="Rating TB" value={`${(DISTRIBUTORS.reduce((s, d) => s + d.rating, 0) / DISTRIBUTORS.length).toFixed(1)}★`} icon={Star} color="var(--amber)" />
+      <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--slate-100)' }}>
+        {[
+          { key: 'distributors', label: 'Hệ thống đại lý', icon: Network },
+          { key: 'routes', label: 'Tuyến đường', icon: Route },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key as Tab)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                ${activeTab === tab.key ? 'bg-white text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
+              <Icon size={16} />{tab.label}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in stagger-children">
-        {DISTRIBUTORS.map(dist => (
-          <Card key={dist.id} hover padding="lg" className="group">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-mono font-semibold" style={{ color: 'var(--primary-500)' }}>{dist.code}</p>
-                <h3 className="text-base font-semibold mt-1">{dist.name}</h3>
-              </div>
-              <Badge variant="custom" color={TYPE_COLORS[dist.type]} bg={`${TYPE_COLORS[dist.type]}15`}>{dist.type}</Badge>
-            </div>
+      {activeTab === 'distributors' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-fade-in stagger-children">
+           {distributors.map(d => (
+              <Card key={d.id} hover padding="md" className="flex flex-col justify-between group">
+                <div>
+                   <div className="flex items-start justify-between">
+                      <Badge variant="custom" bg="var(--slate-100)" color="var(--text-muted)">{d.code}</Badge>
+                      <div className="flex flex-col items-end gap-2">
+                         <Badge variant={d.status === 'active' ? 'success' : 'default'}>{d.status}</Badge>
+                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => openEdit(d)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                              <Edit size={14} />
+                            </button>
+                            <button onClick={() => confirmDelete(d)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                              <Trash2 size={14} />
+                            </button>
+                         </div>
+                      </div>
+                   </div>
+                   <h3 className="font-bold text-sm mt-3 line-clamp-1 text-slate-800">{d.name}</h3>
+                   <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400 font-medium">
+                      <MapPin size={10} /> {d.region} · {d.type}
+                   </div>
+                </div>
+                <div className="mt-6 pt-3 border-t">
+                   <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">Đại diện liên hệ</p>
+                   <p className="text-xs font-bold text-slate-700">{d.contact}</p>
+                   <p className="text-[11px] text-blue-600 font-semibold mt-0.5">{d.phone}</p>
+                </div>
+              </Card>
+           ))}
+        </div>
+      )}
 
-            <div className="flex items-center gap-1.5 mt-2">
-              <MapPin size={12} style={{ color: 'var(--text-muted)' }} />
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{dist.region}</span>
-              <span className="ml-auto flex items-center gap-1 text-sm font-bold" style={{ color: 'var(--amber)' }}>{dist.rating}★</span>
+      {activeTab === 'routes' && (
+         <Card padding="lg" className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50 border-dashed border-2">
+            <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-4">
+               <Route size={32} className="text-slate-300" />
             </div>
+            <h3 className="font-bold text-lg text-slate-700">Quản lý tuyến đường đang được thiết lập</h3>
+            <p className="text-sm text-slate-400 max-w-sm mt-2">Tính năng bản đồ nhiệt và tối ưu hóa tuyến đường giao hàng thông minh đang được phát triển.</p>
+            <Button variant="outline" className="mt-6" disabled>Yêu cầu cấu hình</Button>
+         </Card>
+      )}
 
-            <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
-              <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Doanh thu</p><p className="text-sm font-bold">{(dist.revenue / 1e6).toFixed(0)}M</p></div>
-              <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Đơn hàng</p><p className="text-sm font-bold">{dist.orders}</p></div>
-              <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>Điểm bán</p><p className="text-sm font-bold">{dist.stores}</p></div>
-            </div>
+      {/* Edit/Create Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingDistributor ? "Cập nhật đại lý" : "Thêm đại lý mới"}
+        footer={<><Button variant="ghost" onClick={() => setIsModalOpen(false)}>Hủy</Button><Button onClick={handleSave} icon={editingDistributor ? Save : Plus}>{editingDistributor ? 'Cập nhật' : 'Lưu đại lý'}</Button></ warm-purple-50>}>
+        <div className="space-y-4">
+           <Input label="Tên đại lý" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Đại lý A..." />
+           <Input label="Khu vực" value={formData.region} onChange={e => setFormData({...formData, region: e.target.value})} placeholder="TP.HCM / Hà Nội / Đồng Nai..." />
+           <div className="grid grid-cols-2 gap-4">
+              <Select label="Cấp đại lý" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} options={[{value:'Cấp 1', label:'Đại lý cấp 1'}, {value:'Cấp 2', label:'Nhà phân phối'}]} />
+              <Input label="Mã đại lý" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} placeholder="DL-00X" disabled={!!editingDistributor} />
+           </div>
+           <div className="grid grid-cols-2 gap-4">
+              <Input label="Người liên hệ" value={formData.contact} onChange={e => setFormData({...formData, contact: e.target.value})} />
+              <Input label="Số điện thoại" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+           </div>
+           <Select label="Trạng thái" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} options={[{value:'active', label:'Đang hoạt động'}, {value:'inactive', label:'Ngừng hợp tác'}]} />
+        </div>
+      </Modal>
 
-            <div className="flex items-center gap-2 mt-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
-              <Users size={12} /> {dist.contact} · <Phone size={12} /> {dist.phone}
-            </div>
-          </Card>
-        ))}
-      </div>
+      <ConfirmModal 
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
+      />
     </div>
   );
 }

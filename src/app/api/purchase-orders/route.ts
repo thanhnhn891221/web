@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     if (!payload) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
 
     const dbOrders = await prisma.purchaseOrder.findMany({
+      where: { deletedAt: null },
       include: {
         supplier: true,
         items: true,
@@ -28,7 +29,6 @@ export async function GET(request: NextRequest) {
       items: order.items.map(i => ({ name: i.itemName, qty: i.quantity, unit: i.unit, price: i.unitPrice })),
       totalAmount: order.totalAmount,
       status: order.status,
-      // Fallback createdBy for now
       createdBy: 'Hệ thống',
       createdAt: order.createdAt.toISOString().split('T')[0],
       expectedDate: order.expectedDate ? order.expectedDate.toISOString().split('T')[0] : 'N/A',
@@ -39,5 +39,35 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching purchase orders:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const data = await request.json();
+    const order = await prisma.purchaseOrder.create({
+      data: {
+        code: data.code || `PO-${Date.now()}`,
+        supplierId: data.supplierId,
+        totalAmount: data.amount || 0,
+        status: data.status || 'pending',
+        expectedDate: data.expectedDate ? new Date(data.expectedDate) : null,
+        note: data.note,
+        items: {
+          create: data.items?.map((item: any) => ({
+            itemName: item.name,
+            quantity: item.qty,
+            unit: item.unit,
+            unitPrice: item.price,
+            totalPrice: item.qty * item.price
+          }))
+        }
+      },
+      include: { items: true }
+    });
+    return NextResponse.json({ success: true, data: order });
+  } catch (error) {
+    console.error('Error creating purchase order:', error);
+    return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }

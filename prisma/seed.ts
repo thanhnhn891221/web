@@ -452,7 +452,36 @@ async function main() {
   }
   console.log(`  ✅ Drivers and Shipments created\n`);
 
-  console.log('\n💰 Tạo Finance Data (FMS, AMS, BMS)...');
+  console.log('\n🏭 Tạo Production Data (FMS)...');
+  const linesData = [
+    { name: 'Dây chuyền SX #1', product: 'Bánh quy vị bơ 200g', status: 'running', efficiency: 94.5, target: 5000, output: 4800, shift: 'Ca sáng', operator: 'Trần Văn Hùng' },
+    { name: 'Dây chuyền SX #2', product: 'Bánh mì sandwich 400g', status: 'running', efficiency: 88.2, target: 2500, output: 2100, shift: 'Ca sáng', operator: 'Nguyễn Thị Mai' },
+    { name: 'Dây chuyền SX #3', product: 'Kẹo dẻo trái cây 150g', status: 'idle', efficiency: 0, target: 3000, output: 0, shift: 'Chờ NVL', operator: '—' },
+  ];
+  const linesObj: Record<string, string> = {};
+  for (const l of linesData) {
+    const res = await prisma.productionLine.create({ data: l });
+    linesObj[l.name] = res.id;
+  }
+
+  const prodOrdersData = [
+    { code: 'LSX-001', productName: 'Bánh quy vị bơ 200g', quantity: 10000, completed: 7200, unit: 'hộp', lineName: 'Dây chuyền SX #1', priority: 'high', status: 'in_progress', deadline: new Date('2026-04-10') },
+    { code: 'LSX-002', productName: 'Bánh mì sandwich 400g', quantity: 5000, completed: 2100, unit: 'gói', lineName: 'Dây chuyền SX #2', priority: 'medium', status: 'in_progress', deadline: new Date('2026-04-12') },
+  ];
+  for (const o of prodOrdersData) {
+    const existing = await prisma.productionOrder.findUnique({ where: { code: o.code } });
+    if (!existing) {
+      await prisma.productionOrder.create({
+        data: {
+          code: o.code, productName: o.productName, quantity: o.quantity, completed: o.completed, unit: o.unit,
+          lineId: linesObj[o.lineName], priority: o.priority, status: o.status, deadline: o.deadline
+        }
+      });
+    }
+  }
+  console.log(`  ✅ Production data created\n`);
+
+  console.log('\n💰 Tạo Finance Data (AMS, BMS, CMS)...');
   const transactionsData = [
     { code: 'GL-001', date: new Date('2026-03-31'), description: 'Doanh thu bán hàng OMS-1254', account: '511 - Doanh thu', debit: 32000000, credit: 0, type: 'revenue' },
     { code: 'GL-002', date: new Date('2026-03-31'), description: 'Chi phí NVL PO-001', account: '621 - Chi phí NVL', debit: 0, credit: 15600000, type: 'expense' },
@@ -486,12 +515,122 @@ async function main() {
     { name: 'Phòng Nhân sự', deptId: depts['HR'], period: 'Q2/2026', allocated: 150000000, spent: 45000000 },
   ];
   for (const b of budgetsData) {
-    // Just simple create for budget
-    await prisma.budget.create({
-      data: { departmentId: b.deptId, departmentName: b.name, period: b.period, allocated: b.allocated, spent: b.spent }
+    const existing = await prisma.budget.findFirst({
+      where: { departmentName: b.name, period: b.period }
     });
+    if (!existing) {
+      await prisma.budget.create({
+        data: { departmentId: b.deptId, departmentName: b.name, period: b.period, allocated: b.allocated, spent: b.spent }
+      });
+    }
   }
   console.log(`  ✅ Finance data created\n`);
+
+  console.log('\n🧪 Tạo Research Data (RMS)...');
+  const projectsData = [
+    { code: 'RD-001', name: 'Công thức Bánh quy Socola Đen', phase: 'testing', lead: 'Nguyễn Hữu Trí', teamSize: 3, progress: 75, deadline: new Date('2026-04-10'), budget: 25000000 },
+    { code: 'RD-002', name: 'Dòng Nước ép Cold-Pressed', phase: 'research', lead: 'Trần Thị Ngọc', teamSize: 2, progress: 32, deadline: new Date('2026-05-30'), budget: 45000000 },
+    { code: 'RD-003', name: 'Bao bì Eco-Friendly phân hủy', phase: 'prototype', lead: 'Lê Đức Anh', teamSize: 4, progress: 55, deadline: new Date('2026-06-01'), budget: 60000000 },
+  ];
+  for (const p of projectsData) {
+    const existing = await prisma.researchProject.findUnique({ where: { code: p.code } });
+    if (!existing) {
+      await prisma.researchProject.create({ data: p });
+    }
+  }
+  console.log(`  ✅ Research data created\n`);
+
+  console.log('\n📢 Tạo Marketing Data (MMS)...');
+  const campaignsData = [
+    { name: 'Flash Sale Tết Nguyên Đán', channel: 'Facebook + TikTok', budget: 50000000, spent: 42000000, leads: 1250, conversions: 312, status: 'completed', period: '01/01 - 15/02/2026' },
+    { name: 'Ra mắt Bánh mì Sandwich mới', channel: 'Google Ads + Instagram', budget: 30000000, spent: 18500000, leads: 680, conversions: 145, status: 'active', period: '15/03 - 30/04/2026' },
+    { name: 'Chương trình KH Thân thiết', channel: 'Email + SMS', budget: 15000000, spent: 8200000, leads: 420, conversions: 210, status: 'active', period: '01/03 - 31/05/2026' },
+  ];
+  for (const c of campaignsData) {
+    const existing = await prisma.marketingCampaign.findFirst({ where: { name: c.name } });
+    if (!existing) {
+      await prisma.marketingCampaign.create({ data: c });
+    }
+  }
+  console.log(`  ✅ Marketing data created\n`);
+
+  console.log('\n🛡️ Tạo Quality Data (QMS)...');
+  const qcChecksData = [
+    {
+      code: 'QC-001', product: 'Bánh quy vị bơ 200g', batch: 'LSX-001-B3', type: 'in_process', inspector: 'Ngô Thị Lan Anh', result: 'passed', defectRate: 0.3, checkedAt: new Date('2026-04-01T10:00:00Z'),
+      criteria: [
+        { name: 'Trọng lượng', standard: '200 ± 5g', actual: '201g', pass: true },
+        { name: 'Độ ẩm', standard: '< 4%', actual: '3.2%', pass: true }
+      ]
+    },
+    {
+      code: 'QC-002', product: 'Đường tinh luyện', batch: 'NVL-PO2026001', type: 'incoming', inspector: 'Trần Quốc Hùng', result: 'passed', defectRate: 0, checkedAt: new Date('2026-04-01T09:00:00Z'),
+      criteria: [
+        { name: 'Độ tinh khiết', standard: '≥ 99.5%', actual: '99.7%', pass: true }
+      ]
+    },
+  ];
+  for (const q of qcChecksData) {
+    const existing = await prisma.qualityCheck.findUnique({ where: { code: q.code } });
+    if (!existing) {
+      const { criteria, ...qcData } = q;
+      const res = await prisma.qualityCheck.create({ data: qcData });
+      for (const c of criteria) {
+        await prisma.qualityCriteria.create({
+          data: { ...c, qualityCheckId: res.id }
+        });
+      }
+    }
+  }
+  console.log(`  ✅ Quality data created\n`);
+
+  console.log('\n🏗️ Tạo Core Settings (CORE)...');
+  const settingsData = [
+    { key: 'APP_NAME', value: 'AIO.MS ERP', group: 'general', type: 'string' },
+    { key: 'COMPANY_NAME', value: 'Google Antigravity Enterprise', group: 'general', type: 'string' },
+    { key: 'SITE_URL', value: 'http://localhost:3000', group: 'general', type: 'string' },
+  ];
+  for (const s of settingsData) {
+    const existing = await prisma.systemSetting.findUnique({ where: { key: s.key } });
+    if (!existing) {
+      await prisma.systemSetting.create({ data: s });
+    }
+  }
+
+  console.log('\n🖥️ Tạo IT Data (IMS)...');
+  const itAssetsData = [
+    { code: 'AST-001', name: 'Main DB Server #1', type: 'server', status: 'active', location: 'DC-01' },
+    { code: 'AST-002', name: 'HR Workstation L-01', type: 'workstation', status: 'active', location: 'Phòng HR' },
+  ];
+  for (const a of itAssetsData) {
+    const existing = await prisma.iTAsset.findUnique({ where: { code: a.code } });
+    if (!existing) {
+      await prisma.iTAsset.create({ data: a });
+    }
+  }
+
+  const ticketsData = [
+    { code: 'TKT-001', title: 'Lỗi đồng bộ dữ liệu DMS', priority: 'high', status: 'open', requester: 'Admin' },
+    { code: 'TKT-002', title: 'Cấp quyền truy cập CMS cho user mới', priority: 'medium', status: 'resolved', requester: 'Lê Thị Thu' },
+  ];
+  for (const t of ticketsData) {
+    const existing = await prisma.supportTicket.findUnique({ where: { code: t.code } });
+    if (!existing) {
+      await prisma.supportTicket.create({ data: t });
+    }
+  }
+
+  console.log('\n🛣️ Tạo Distribution Data (DMS)...');
+  const distributorsData = [
+    { code: 'DL-001', name: 'Đại lý Phương Nam', region: 'Đồng Nai', type: 'Cấp 1', contact: 'Phạm Văn Long', phone: '0251-234-5678' },
+    { code: 'DL-002', name: 'NPP Miền Tây', region: 'Cần Thơ', type: 'Cấp 1', contact: 'Trần Thị Bích', phone: '0292-345-6789' },
+  ];
+  for (const d of distributorsData) {
+    const existing = await prisma.distributor.findUnique({ where: { code: d.code } });
+    if (!existing) {
+      await prisma.distributor.create({ data: d });
+    }
+  }
 
   // ━━━ SUMMARY ━━━
   console.log('═══════════════════════════════════════');

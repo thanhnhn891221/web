@@ -327,7 +327,7 @@ export default function WMSPage() {
 
       {/* Modals */}
       <Modal isOpen={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} title={editingItem ? "Cập nhật vật tư" : "Thêm vật tư mới"}
-        footer={<><Button variant="ghost" onClick={() => setIsItemModalOpen(false)}>Hủy</Button><Button onClick={handleSaveItem} icon={editingItem ? Save : Plus}>{editingItem ? 'Cập nhật' : 'Lưu vật tư'}</Button></ warm-slate-50>}>
+        footer={<><Button variant="ghost" onClick={() => setIsItemModalOpen(false)}>Hủy</Button><Button onClick={handleSaveItem} icon={editingItem ? Save : Plus}>{editingItem ? 'Cập nhật' : 'Lưu vật tư'}</Button></>}>
         <div className="space-y-4">
            <Input label="Tên vật tư" value={itemForm.name} onChange={e => setItemForm({...itemForm, name: e.target.value})} placeholder="Vải lót..." />
            <div className="grid grid-cols-2 gap-4">
@@ -350,7 +350,7 @@ export default function WMSPage() {
       </Modal>
 
       <Modal isOpen={isWarehouseModalOpen} onClose={() => setIsWarehouseModalOpen(false)} title={editingWarehouse ? "Cập nhật kho bãi" : "Thêm kho bãi mới"}
-        footer={<><Button variant="ghost" onClick={() => setIsWarehouseModalOpen(false)}>Hủy</Button><Button onClick={handleSaveWarehouse} icon={editingWarehouse ? Save : Plus}>{editingWarehouse ? 'Cập nhật' : 'Lưu kho'}</Button></ warm-slate-50>}>
+        footer={<><Button variant="ghost" onClick={() => setIsWarehouseModalOpen(false)}>Hủy</Button><Button onClick={handleSaveWarehouse} icon={editingWarehouse ? Save : Plus}>{editingWarehouse ? 'Cập nhật' : 'Lưu kho'}</Button></>}>
         <div className="space-y-4">
            <Input label="Tên kho" value={warehouseForm.name} onChange={e => setWarehouseForm({...warehouseForm, name: e.target.value})} placeholder="Kho A..." />
            <Input label="Mã kho" value={warehouseForm.code} onChange={e => setWarehouseForm({...warehouseForm, code: e.target.value})} placeholder="WH-01" disabled={!!editingWarehouse} />

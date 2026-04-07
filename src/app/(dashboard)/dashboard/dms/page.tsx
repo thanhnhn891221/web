@@ -206,7 +206,7 @@ export default function DMSPage() {
 
       {/* Edit/Create Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingDistributor ? "Cập nhật đại lý" : "Thêm đại lý mới"}
-        footer={<><Button variant="ghost" onClick={() => setIsModalOpen(false)}>Hủy</Button><Button onClick={handleSave} icon={editingDistributor ? Save : Plus}>{editingDistributor ? 'Cập nhật' : 'Lưu đại lý'}</Button></ warm-purple-50>}>
+        footer={<><Button variant="ghost" onClick={() => setIsModalOpen(false)}>Hủy</Button><Button onClick={handleSave} icon={editingDistributor ? Save : Plus}>{editingDistributor ? 'Cập nhật' : 'Lưu đại lý'}</Button></>}>
         <div className="space-y-4">
            <Input label="Tên đại lý" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Đại lý A..." />
            <Input label="Khu vực" value={formData.region} onChange={e => setFormData({...formData, region: e.target.value})} placeholder="TP.HCM / Hà Nội / Đồng Nai..." />

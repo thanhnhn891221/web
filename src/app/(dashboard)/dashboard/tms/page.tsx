@@ -322,7 +322,7 @@ export default function TMSPage() {
       </Modal>
 
       <Modal isOpen={isShipmentModalOpen} onClose={() => setIsShipmentModalOpen(false)} title={editingShipment ? "Cập nhật lệnh giao" : "Tạo lệnh giao hàng mới"}
-        footer={<><Button variant="ghost" onClick={() => setIsShipmentModalOpen(false)}>Hủy</Button><Button onClick={handleSaveShipment} icon={editingShipment ? Save : Plus}>{editingShipment ? 'Cập nhật' : 'Lưu lệnh giao'}</Button></ warm-indigo-50>}>
+        footer={<><Button variant="ghost" onClick={() => setIsShipmentModalOpen(false)}>Hủy</Button><Button onClick={handleSaveShipment} icon={editingShipment ? Save : Plus}>{editingShipment ? 'Cập nhật' : 'Lưu lệnh giao'}</Button></>}>
         <div className="space-y-4">
            <Input label="Khách hàng" value={shipmentForm.customerName} onChange={e => setShipmentForm({...shipmentForm, customerName: e.target.value})} placeholder="Công ty A..." />
            <Input label="Địa chỉ giao" value={shipmentForm.address} onChange={e => setShipmentForm({...shipmentForm, address: e.target.value})} placeholder="123...) " />

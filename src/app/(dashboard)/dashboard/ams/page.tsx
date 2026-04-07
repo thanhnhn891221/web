@@ -347,7 +347,7 @@ export default function AMSPage() {
       </Modal>
 
       <Modal isOpen={isInvModalOpen} onClose={() => setIsInvModalOpen(false)} title={editingInv ? "Cập nhật hóa đơn" : "Tạo hóa đơn mới"}
-        footer={<><Button variant="ghost" onClick={() => setIsInvModalOpen(false)}>Hủy</Button><Button onClick={handleSaveInv} icon={editingInv ? Save : Plus}>{editingInv ? 'Cập nhật' : 'Lưu hóa đơn'}</Button></ warm-emerald-50>}>
+        footer={<><Button variant="ghost" onClick={() => setIsInvModalOpen(false)}>Hủy</Button><Button onClick={handleSaveInv} icon={editingInv ? Save : Plus}>{editingInv ? 'Cập nhật' : 'Lưu hóa đơn'}</Button></>}>
         <div className="space-y-4">
             <Input label="Khách hàng" value={invForm.customerName} onChange={e => setInvForm({...invForm, customerName: e.target.value})} placeholder="Tên khách hàng/đại lý..." />
             <div className="grid grid-cols-2 gap-4">

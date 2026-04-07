@@ -5,7 +5,8 @@ import {
   ShoppingBag, Plus, Search, Filter, Eye, Edit, Trash2,
   Users, Truck, CheckCircle2, Clock, Package,
   DollarSign, MapPin, MoreHorizontal, FileText,
-  ArrowUpRight, ArrowDownRight, User, Save
+  ArrowUpRight, ArrowDownRight, User, Save,
+  Mail, Phone
 } from 'lucide-react';
 import { Button, Badge, Card, Modal, Input, Select, StatCard, ConfirmModal } from '@/components/ui';
 

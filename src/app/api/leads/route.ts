@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     const lead = await prisma.lead.create({
       data: {
+        code: `LD-${Date.now().toString().slice(-6)}`,
         name: data.name,
         email: data.email,
         phone: data.phone,

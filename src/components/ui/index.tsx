@@ -14,7 +14,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: LucideIcon;
   iconRight?: LucideIcon;
   isLoading?: boolean;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
@@ -229,6 +229,7 @@ interface BadgeProps {
   icon?: React.ElementType;
   color?: string;
   bg?: string;
+  size?: 'xs' | 'sm' | 'md';
   className?: string;
 }
 
@@ -240,17 +241,23 @@ const badgeColors: Record<Exclude<BadgeVariant, 'custom'>, { color: string; bg: 
   info: { color: 'var(--sky)', bg: 'var(--sky-light)' },
 };
 
-export function Badge({ children, variant = 'default', icon: Icon, color, bg, className = '' }: BadgeProps) {
+const badgeSizes = {
+  xs: 'px-1.5 py-0.5 text-[10px]',
+  sm: 'px-2 py-0.5 text-xs',
+  md: 'px-2.5 py-1 text-xs',
+};
+
+export function Badge({ children, variant = 'default', icon: Icon, color, bg, size = 'md', className = '' }: BadgeProps) {
   const colors = variant === 'custom'
     ? { color: color || 'var(--text-secondary)', bg: bg || 'var(--slate-100)' }
     : badgeColors[variant];
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${className}`}
+      className={`inline-flex items-center gap-1 rounded-full font-medium ${badgeSizes[size]} ${className}`}
       style={{ background: colors.bg, color: colors.color }}
     >
-      {Icon && <Icon size={12} />}
+      {Icon && <Icon size={size === 'xs' ? 10 : 12} />}
       {children}
     </span>
   );

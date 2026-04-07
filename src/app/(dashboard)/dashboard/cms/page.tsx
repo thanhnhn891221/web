@@ -181,7 +181,7 @@ export default function CMSPage() {
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingRisk ? "Cập nhật rủi ro" : "Báo cáo rủi ro / Sự cố mới"}
-        footer={<><Button variant="ghost" onClick={() => setIsModalOpen(false)}>Hủy</Button><Button onClick={handleSave} icon={editingRisk ? Save : ShieldAlert}>{editingRisk ? 'Cập nhật' : 'Gửi báo cáo'}</Button></ warm-rose-50>}>
+        footer={<><Button variant="ghost" onClick={() => setIsModalOpen(false)}>Hủy</Button><Button onClick={handleSave} icon={editingRisk ? Save : ShieldAlert}>{editingRisk ? 'Cập nhật' : 'Gửi báo cáo'}</Button></>}>
         <div className="space-y-4">
            <Input label="Tiêu đề rủi ro" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="Phát hiện sai sót trong..." />
            <div className="grid grid-cols-2 gap-4">

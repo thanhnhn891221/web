@@ -454,13 +454,17 @@ async function main() {
 
   console.log('\n🏭 Tạo Production Data (FMS)...');
   const linesData = [
-    { name: 'Dây chuyền SX #1', product: 'Bánh quy vị bơ 200g', status: 'running', efficiency: 94.5, target: 5000, output: 4800, shift: 'Ca sáng', operator: 'Trần Văn Hùng' },
-    { name: 'Dây chuyền SX #2', product: 'Bánh mì sandwich 400g', status: 'running', efficiency: 88.2, target: 2500, output: 2100, shift: 'Ca sáng', operator: 'Nguyễn Thị Mai' },
-    { name: 'Dây chuyền SX #3', product: 'Kẹo dẻo trái cây 150g', status: 'idle', efficiency: 0, target: 3000, output: 0, shift: 'Chờ NVL', operator: '—' },
+    { code: 'PL-001', name: 'Dây chuyền SX #1', product: 'Bánh quy vị bơ 200g', status: 'running', capacity: 5000, manager: 'Lê Hoàng Duy', efficiency: 94.5, target: 5000, output: 4800, shift: 'Ca sáng', operator: 'Trần Văn Hùng' },
+    { code: 'PL-002', name: 'Dây chuyền SX #2', product: 'Bánh mì sandwich 400g', status: 'running', capacity: 3000, manager: 'Lê Hoàng Duy', efficiency: 88.2, target: 2500, output: 2100, shift: 'Ca sáng', operator: 'Nguyễn Thị Mai' },
+    { code: 'PL-003', name: 'Dây chuyền SX #3', product: 'Kẹo dẻo trái cây 150g', status: 'idle', capacity: 3000, manager: null, efficiency: 0, target: 3000, output: 0, shift: 'Chờ NVL', operator: '—' },
   ];
   const linesObj: Record<string, string> = {};
   for (const l of linesData) {
-    const res = await prisma.productionLine.create({ data: l });
+    const res = await prisma.productionLine.upsert({
+      where: { code: l.code },
+      update: { name: l.name, status: l.status, efficiency: l.efficiency, target: l.target, output: l.output },
+      create: l,
+    });
     linesObj[l.name] = res.id;
   }
 

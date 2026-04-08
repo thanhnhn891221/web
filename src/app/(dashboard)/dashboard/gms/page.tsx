@@ -141,7 +141,15 @@ export default function GMSPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in stagger-children pt-2">
           {integrations.map((item) => (
-            <Card key={item.id} hover className="relative group overflow-hidden border-t-[6px]" style={{ borderTopColor: item.status === 'active' ? 'var(--emerald)' : item.status === 'error' ? 'var(--rose)' : 'var(--slate-300)' }}>
+            <Card 
+              key={item.id} 
+              hover 
+              className={`relative group overflow-hidden border-t-[6px] ${
+                item.status === 'active' ? 'border-emerald-500' : 
+                item.status === 'error' ? 'border-rose-500' : 
+                'border-slate-300'
+              }`}
+            >
               
               <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={() => openEdit(item)} className="p-1.5 bg-slate-100 hover:bg-white rounded-md text-slate-500 hover:text-primary-600 transition-colors shadow-sm"><Edit size={14} /></button>

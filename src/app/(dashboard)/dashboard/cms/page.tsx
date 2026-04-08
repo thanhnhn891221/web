@@ -150,7 +150,7 @@ export default function CMSPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in stagger-children">
          {risks.map(risk => (
-           <Card key={risk.id} hover padding="md" className="group">
+           <Card key={risk.id} hover padding="md" className="group cursor-pointer" onClick={() => openEdit(risk)}>
               <div className="flex items-start justify-between">
                  <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -162,10 +162,10 @@ export default function CMSPage() {
                  <div className="flex flex-col items-end gap-2">
                     <Badge variant={risk.status === 'identified' ? 'info' : 'success'}>{risk.status}</Badge>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                       <button onClick={() => openEdit(risk)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                       <button onClick={(e) => { e.stopPropagation(); openEdit(risk); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                          <Edit size={14} />
                        </button>
-                       <button onClick={() => confirmDelete(risk)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                       <button onClick={(e) => { e.stopPropagation(); confirmDelete(risk); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                          <Trash2 size={14} />
                        </button>
                     </div>

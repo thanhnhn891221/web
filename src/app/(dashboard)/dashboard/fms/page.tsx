@@ -262,7 +262,7 @@ export default function FMSPage() {
       {activeTab === 'lines' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in stagger-children">
           {lines.map(line => (
-            <Card key={line.id} hover padding="lg">
+            <Card key={line.id} hover padding="lg" className="cursor-pointer" onClick={() => openEditLine(line)}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: line.status === 'running' ? 'rgba(16, 185, 129, 0.1)' : 'var(--slate-100)' }}>
@@ -276,10 +276,10 @@ export default function FMSPage() {
                 <div className="flex flex-col items-end gap-2">
                   <Badge variant={line.status === 'running' ? 'success' : 'warning'}>{line.status === 'running' ? 'Đang chạy' : 'Dừng'}</Badge>
                    <div className="flex items-center gap-1">
-                      <button onClick={() => openEditLine(line)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); openEditLine(line); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                         <Edit size={14} />
                       </button>
-                      <button onClick={() => confirmDeleteLine(line)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); confirmDeleteLine(line); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                         <Trash2 size={14} />
                       </button>
                    </div>
@@ -299,7 +299,7 @@ export default function FMSPage() {
       {activeTab === 'orders' && (
         <div className="space-y-4 animate-fade-in stagger-children">
           {orders.map(order => (
-            <Card key={order.id} hover className="flex items-center gap-4 group">
+            <Card key={order.id} hover className="flex items-center gap-4 group cursor-pointer" onClick={() => openEditOrder(order)}>
               <div className="p-3 rounded-lg bg-[var(--primary-50)] text-[var(--primary-600)] pl-4">
                 <ClipboardList size={20} />
               </div>
@@ -313,10 +313,10 @@ export default function FMSPage() {
                     <p className="text-[10px] text-slate-400 mt-1">{order.startDate ? new Date(order.startDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
                  </div>
                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pl-4 border-l border-slate-100">
-                    <button onClick={() => openEditOrder(order)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); openEditOrder(order); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                       <Edit size={14} />
                     </button>
-                    <button onClick={() => confirmDeleteOrder(order)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); confirmDeleteOrder(order); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                       <Trash2 size={14} />
                     </button>
                  </div>

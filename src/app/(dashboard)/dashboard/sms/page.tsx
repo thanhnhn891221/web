@@ -146,7 +146,7 @@ export default function SMSPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {leads.map(lead => (
-           <Card key={lead.id} hover padding="md">
+           <Card key={lead.id} hover padding="md" className="cursor-pointer" onClick={() => openEdit(lead)}>
               <div className="flex items-start justify-between">
                 <div>
                    <h3 className="font-bold text-sm">{lead.name}</h3>
@@ -155,10 +155,10 @@ export default function SMSPage() {
                 <div className="flex flex-col items-end gap-2">
                    <Badge variant={lead.status === 'new' ? 'info' : lead.status === 'contacted' ? 'warning' : 'success'}>{lead.status}</Badge>
                    <div className="flex items-center gap-1">
-                      <button onClick={() => openEdit(lead)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); openEdit(lead); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                         <Edit size={14} />
                       </button>
-                      <button onClick={() => confirmDelete(lead)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); confirmDelete(lead); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                         <Trash2 size={14} />
                       </button>
                    </div>

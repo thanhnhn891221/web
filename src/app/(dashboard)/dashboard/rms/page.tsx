@@ -146,7 +146,7 @@ export default function RMSPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.map(p => (
-           <Card key={p.id} hover padding="lg" className="group">
+           <Card key={p.id} hover padding="lg" className="group cursor-pointer" onClick={() => openEdit(p)}>
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-[var(--primary-500)] uppercase">{p.code}</p>
@@ -155,10 +155,10 @@ export default function RMSPage() {
                 <div className="flex flex-col items-end gap-2">
                    <Badge variant="info">{p.phase}</Badge>
                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(p)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); openEdit(p); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                         <Edit size={14} />
                       </button>
-                      <button onClick={() => confirmDelete(p)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); confirmDelete(p); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                         <Trash2 size={14} />
                       </button>
                    </div>

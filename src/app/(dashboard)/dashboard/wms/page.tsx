@@ -250,7 +250,7 @@ export default function WMSPage() {
       {activeTab === 'inventory' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in stagger-children">
            {inventory.map(item => (
-              <Card key={item.id} hover padding="md" className="group">
+              <Card key={item.id} hover padding="md" className="group cursor-pointer" onClick={() => openEditItem(item)}>
                  <div className="flex items-start justify-between">
                     <div>
                        <Badge variant="custom" bg="var(--slate-100)" color="var(--text-muted)">{item.sku}</Badge>
@@ -259,10 +259,10 @@ export default function WMSPage() {
                     <div className="flex flex-col items-end gap-2">
                        <Badge variant={item.quantity > item.minStock ? 'success' : 'warning'}>{item.status}</Badge>
                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => openEditItem(item)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                          <button onClick={(e) => { e.stopPropagation(); openEditItem(item); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                             <Edit size={14} />
                           </button>
-                          <button onClick={() => confirmDeleteItem(item)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                          <button onClick={(e) => { e.stopPropagation(); confirmDeleteItem(item); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                             <Trash2 size={14} />
                           </button>
                        </div>
@@ -287,7 +287,7 @@ export default function WMSPage() {
       {activeTab === 'warehouses' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in stagger-children">
            {warehouses.map(w => (
-              <Card key={w.id} hover padding="lg" className="group">
+              <Card key={w.id} hover padding="lg" className="group cursor-pointer" onClick={() => openEditWarehouse(w)}>
                  <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-4">
                        <div className="w-12 h-12 rounded-xl bg-[var(--primary-50)] text-[var(--primary-600)] flex items-center justify-center">
@@ -301,10 +301,10 @@ export default function WMSPage() {
                     <div className="flex flex-col items-end gap-3">
                        <Badge variant="custom" bg="var(--slate-100)" color="var(--text-secondary)">{w.code}</Badge>
                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => openEditWarehouse(w)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                          <button onClick={(e) => { e.stopPropagation(); openEditWarehouse(w); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                             <Edit size={14} />
                           </button>
-                          <button onClick={() => confirmDeleteWarehouse(w)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                          <button onClick={(e) => { e.stopPropagation(); confirmDeleteWarehouse(w); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                             <Trash2 size={14} />
                           </button>
                        </div>

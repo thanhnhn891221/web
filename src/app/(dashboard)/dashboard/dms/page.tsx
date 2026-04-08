@@ -162,17 +162,17 @@ export default function DMSPage() {
       {activeTab === 'distributors' && (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-fade-in stagger-children">
            {distributors.map(d => (
-              <Card key={d.id} hover padding="md" className="flex flex-col justify-between group">
+              <Card key={d.id} hover padding="md" className="flex flex-col justify-between group cursor-pointer" onClick={() => openEdit(d)}>
                 <div>
                    <div className="flex items-start justify-between">
                       <Badge variant="custom" bg="var(--slate-100)" color="var(--text-muted)">{d.code}</Badge>
                       <div className="flex flex-col items-end gap-2">
                          <Badge variant={d.status === 'active' ? 'success' : 'default'}>{d.status}</Badge>
                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => openEdit(d)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                            <button onClick={(e) => { e.stopPropagation(); openEdit(d); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                               <Edit size={14} />
                             </button>
-                            <button onClick={() => confirmDelete(d)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                            <button onClick={(e) => { e.stopPropagation(); confirmDelete(d); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                               <Trash2 size={14} />
                             </button>
                          </div>

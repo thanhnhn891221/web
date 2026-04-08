@@ -28,7 +28,7 @@ export const MODULES: ModuleInfo[] = [
     description: 'Đăng nhập, phân quyền (RBAC), cấu hình hệ thống',
     icon: 'Shield',
     color: 'hsl(348, 75%, 46%)', // Đỏ Primary
-    href: '#',
+    href: '/dashboard/core',
     group: 'system',
     isEnabled: true,
     order: 1,

@@ -162,7 +162,7 @@ export default function MMSPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {campaigns.map(c => (
-           <Card key={c.id} hover padding="lg">
+           <Card key={c.id} hover padding="lg" className="cursor-pointer" onClick={() => openEdit(c)}>
               <div className="flex items-start justify-between">
                 <div>
                    <h3 className="font-bold text-base">{c.name}</h3>
@@ -171,10 +171,10 @@ export default function MMSPage() {
                 <div className="flex flex-col items-end gap-2">
                    <Badge variant={c.status === 'active' ? 'success' : 'info'}>{c.status}</Badge>
                    <div className="flex items-center gap-1">
-                      <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); openEdit(c); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                         <Edit size={14} />
                       </button>
-                      <button onClick={() => confirmDelete(c)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); confirmDelete(c); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                         <Trash2 size={14} />
                       </button>
                    </div>

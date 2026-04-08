@@ -316,7 +316,7 @@ export default function HMSPage() {
         <div className="space-y-4 animate-fade-in">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {employees.map(emp => (
-              <Card key={emp.id} hover padding="lg">
+              <Card key={emp.id} hover padding="lg" className="cursor-pointer" onClick={() => openEditEmployee(emp)}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-[var(--primary-50)] text-[var(--primary-600)] flex items-center justify-center font-bold text-lg">
@@ -330,10 +330,10 @@ export default function HMSPage() {
                   <div className="flex flex-col items-end gap-2">
                     <Badge variant={STATUS_MAP[emp.status]?.variant || 'default'}>{STATUS_MAP[emp.status]?.label}</Badge>
                     <div className="flex items-center gap-1">
-                       <button onClick={() => openEditEmployee(emp)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                       <button onClick={(e) => { e.stopPropagation(); openEditEmployee(emp); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                           <Edit size={14} />
                        </button>
-                       <button onClick={() => confirmDeleteEmployee(emp)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                       <button onClick={(e) => { e.stopPropagation(); confirmDeleteEmployee(emp); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                           <Trash2 size={14} />
                        </button>
                     </div>
@@ -353,16 +353,16 @@ export default function HMSPage() {
       {activeTab === 'departments' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
           {departments.map(dept => (
-            <Card key={dept.id} hover padding="lg">
+            <Card key={dept.id} hover padding="lg" className="cursor-pointer" onClick={() => openEditDept(dept)}>
               <div className="flex items-center justify-between mb-4">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${dept.color}15` }}>
                   <Building2 size={20} style={{ color: dept.color }} />
                 </div>
                 <div className="flex items-center gap-2">
-                   <button onClick={() => openEditDept(dept)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
+                   <button onClick={(e) => { e.stopPropagation(); openEditDept(dept); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
                       <Edit size={14} />
                    </button>
-                   <button onClick={() => confirmDeleteDept(dept)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                   <button onClick={(e) => { e.stopPropagation(); confirmDeleteDept(dept); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                       <Trash2 size={14} />
                    </button>
                    <Badge variant="custom" bg={`${dept.color}15`} color={dept.color}>{dept.code}</Badge>

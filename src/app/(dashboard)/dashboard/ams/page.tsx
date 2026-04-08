@@ -268,7 +268,7 @@ export default function AMSPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {transactions.map(tx => (
-                    <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors group cursor-pointer" onClick={() => openEditTx(tx)}>
                       <td className="px-6 py-4 whitespace-nowrap text-slate-500">{new Date(tx.date).toLocaleDateString('vi-VN')}</td>
                       <td className="px-6 py-4 font-semibold text-slate-700">{tx.description}</td>
                       <td className="px-6 py-4 text-slate-500 font-mono">{tx.account}</td>
@@ -276,10 +276,10 @@ export default function AMSPage() {
                       <td className="px-6 py-4 text-right font-bold text-emerald-600">{tx.credit > 0 ? tx.credit.toLocaleString() : '-'}</td>
                       <td className="px-6 py-4 text-center">
                          <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => openEditTx(tx)} className="p-1.5 hover:bg-blue-50 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                            <button onClick={(e) => { e.stopPropagation(); openEditTx(tx); }} className="p-1.5 hover:bg-blue-50 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                               <Edit size={14} />
                             </button>
-                            <button onClick={() => confirmDeleteTx(tx)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                            <button onClick={(e) => { e.stopPropagation(); confirmDeleteTx(tx); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                               <Trash2 size={14} />
                             </button>
                          </div>
@@ -295,7 +295,7 @@ export default function AMSPage() {
       {activeTab === 'invoices' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in stagger-children">
            {invoices.map(inv => (
-             <Card key={inv.id} hover padding="md" className="group">
+             <Card key={inv.id} hover padding="md" className="group cursor-pointer" onClick={() => openEditInv(inv)}>
                 <div className="flex items-start justify-between">
                    <div>
                       <Badge variant="custom" bg="var(--slate-100)" color="var(--primary-600)">{inv.code}</Badge>
@@ -304,10 +304,10 @@ export default function AMSPage() {
                    <div className="flex flex-col items-end gap-2">
                       <Badge variant={inv.status === 'paid' ? 'success' : 'warning'}>{inv.status}</Badge>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <button onClick={() => openEditInv(inv)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                         <button onClick={(e) => { e.stopPropagation(); openEditInv(inv); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                            <Edit size={14} />
                          </button>
-                         <button onClick={() => confirmDeleteInv(inv)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                         <button onClick={(e) => { e.stopPropagation(); confirmDeleteInv(inv); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                            <Trash2 size={14} />
                          </button>
                       </div>

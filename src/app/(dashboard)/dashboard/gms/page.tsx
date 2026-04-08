@@ -144,7 +144,8 @@ export default function GMSPage() {
             <Card 
               key={item.id} 
               hover 
-              className={`relative group overflow-hidden border-t-[6px] ${
+              onClick={() => openEdit(item)}
+              className={`relative group overflow-hidden border-t-[6px] cursor-pointer ${
                 item.status === 'active' ? 'border-emerald-500' : 
                 item.status === 'error' ? 'border-rose-500' : 
                 'border-slate-300'
@@ -152,8 +153,7 @@ export default function GMSPage() {
             >
               
               <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => openEdit(item)} className="p-1.5 bg-slate-100 hover:bg-white rounded-md text-slate-500 hover:text-primary-600 transition-colors shadow-sm"><Edit size={14} /></button>
-                <button onClick={() => confirmDelete(item)} className="p-1.5 bg-slate-100 hover:bg-rose-50 rounded-md text-slate-500 hover:text-rose-600 transition-colors shadow-sm"><Trash2 size={14} /></button>
+                <button onClick={(e) => { e.stopPropagation(); confirmDelete(item); }} className="p-1.5 bg-slate-100 hover:bg-rose-50 rounded-md text-slate-500 hover:text-rose-600 transition-colors shadow-sm"><Trash2 size={14} /></button>
               </div>
 
               <div className="flex items-center gap-3 mb-4">

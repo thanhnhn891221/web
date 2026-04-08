@@ -184,7 +184,7 @@ export default function QMSPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {checks.map(check => (
-          <Card key={check.id} hover padding="md" className="group">
+          <Card key={check.id} hover padding="md" className="group cursor-pointer" onClick={() => openEdit(check)}>
             <div className="flex items-start justify-between">
               <div className="flex-1 cursor-pointer" onClick={() => setSelectedCheck(check)}>
                 <p className="text-[10px] font-bold text-[var(--primary-500)] uppercase">{check.code}</p>

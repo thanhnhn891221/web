@@ -259,7 +259,7 @@ export default function TMSPage() {
       {activeTab === 'shipments' && (
         <div className="space-y-4 animate-fade-in stagger-children">
            {shipments.map(s => (
-             <Card key={s.id} hover className="flex items-center gap-4 group">
+             <Card key={s.id} hover className="flex items-center gap-4 group cursor-pointer" onClick={() => openEditShipment(s)}>
                 <div className="p-3 rounded-xl bg-blue-50 text-blue-600 shadow-sm transition-transform group-hover:scale-105">
                    <Navigation size={20}/>
                 </div>
@@ -273,10 +273,10 @@ export default function TMSPage() {
                 </div>
                 <div className="text-right flex flex-col items-end gap-2">
                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEditShipment(s)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); openEditShipment(s); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                         <Edit size={14} />
                       </button>
-                      <button onClick={() => confirmDeleteShipment(s)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); confirmDeleteShipment(s); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                         <Trash2 size={14} />
                       </button>
                    </div>
@@ -293,7 +293,7 @@ export default function TMSPage() {
       {activeTab === 'drivers' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in stagger-children">
            {drivers.map(d => (
-             <Card key={d.id} hover padding="md" className="group">
+             <Card key={d.id} hover padding="md" className="group cursor-pointer" onClick={() => openEditDriver(d)}>
                 <div className="flex items-start justify-between">
                    <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center font-bold text-lg text-slate-500 shadow-inner border-2 border-white">
@@ -305,10 +305,10 @@ export default function TMSPage() {
                       </div>
                    </div>
                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEditDriver(d)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); openEditDriver(d); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                         <Edit size={14} />
                       </button>
-                      <button onClick={() => confirmDeleteDriver(d)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                      <button onClick={(e) => { e.stopPropagation(); confirmDeleteDriver(d); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                         <Trash2 size={14} />
                       </button>
                    </div>

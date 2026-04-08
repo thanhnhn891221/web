@@ -266,7 +266,7 @@ export default function IMSPage() {
       {activeTab === 'assets' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
           {assets.map(asset => (
-            <Card key={asset.id} hover padding="lg">
+            <Card key={asset.id} hover padding="lg" className="cursor-pointer" onClick={() => openEditAsset(asset)}>
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-bold text-[var(--primary-500)]">{asset.code}</p>
@@ -275,10 +275,10 @@ export default function IMSPage() {
                 <div className="flex flex-col items-end gap-2">
                   <Badge variant={asset.status === 'active' ? 'success' : 'warning'}>{asset.status}</Badge>
                   <div className="flex items-center gap-1">
-                    <button onClick={() => openEditAsset(asset)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); openEditAsset(asset); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-colors">
                       <Edit size={14} />
                     </button>
-                    <button onClick={() => confirmDeleteAsset(asset)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); confirmDeleteAsset(asset); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -296,7 +296,7 @@ export default function IMSPage() {
       {activeTab === 'support' && (
         <div className="space-y-3 animate-fade-in">
           {tickets.map(ticket => (
-            <Card key={ticket.id} hover className="flex items-center gap-4">
+            <Card key={ticket.id} hover className="flex items-center gap-4 cursor-pointer" onClick={() => openEditTicket(ticket)}>
               <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[var(--slate-100)] text-[var(--text-muted)]">
                 <Ticket size={18} />
               </div>
@@ -310,10 +310,10 @@ export default function IMSPage() {
               <div className="flex items-center gap-3">
                 <Badge variant={ticket.status === 'open' ? 'warning' : 'success'}>{ticket.status}</Badge>
                 <div className="flex items-center gap-1 border-l pl-3 border-slate-200">
-                  <button onClick={() => openEditTicket(ticket)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
+                  <button onClick={(e) => { e.stopPropagation(); openEditTicket(ticket); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
                     <Edit size={14} />
                   </button>
-                  <button onClick={() => confirmDeleteTicket(ticket)} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
+                  <button onClick={(e) => { e.stopPropagation(); confirmDeleteTicket(ticket); }} className="p-1.5 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
                     <Trash2 size={14} />
                   </button>
                 </div>

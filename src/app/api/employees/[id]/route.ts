@@ -28,9 +28,23 @@ export async function PUT(
         position: data.position,
         level: data.level,
         status: data.status,
+        sysRole: data.sysRole || null,
         hireDate: data.hireDate ? new Date(data.hireDate) : undefined,
       }
     });
+
+    // Sync name to User model if there is an account with the same email
+    try {
+       const linkedUser = await prisma.user.findUnique({ where: { email: data.email } });
+       if (linkedUser && linkedUser.name !== data.name) {
+          await prisma.user.update({
+             where: { id: linkedUser.id },
+             data: { name: data.name }
+          });
+       }
+    } catch(e) {
+       console.error("Failed to sync employee name to user account", e);
+    }
 
     return NextResponse.json({ success: true, data: employee });
   } catch (error) {

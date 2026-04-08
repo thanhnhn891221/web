@@ -168,6 +168,7 @@ model Employee {
   hireDate     DateTime
   status       String   @default("active") // active, probation, on_leave, resigned
   salary       Float?
+  sysRole      String?  // Ghi chú vai trò hệ thống: Admin, Manager, User...
   userId       String?  @unique
   user         User?    @relation(fields: [userId], references: [id])
   createdAt    DateTime @default(now())

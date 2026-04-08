@@ -4,8 +4,8 @@ export const runtime = 'edge';
 
 // Image metadata
 export const size = {
-  width: 32,
-  height: 32,
+  width: 48,
+  height: 48,
 };
 export const contentType = 'image/png';
 
@@ -19,22 +19,45 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#B91C1C', // primary-700
-          borderRadius: '25%', // Slight rounded square / squircle
-          border: '2px solid #FFD700', // Gold border
-          boxShadow: 'inset 0 0 10px rgba(0,0,0,0.5)',
+          background: 'linear-gradient(135deg, #991B1B, #7F1D1D)',
         }}
       >
+        {/* Rotated diamond shape like the login page */}
         <div
           style={{
-            fontSize: '20px',
-            fontWeight: 900,
-            color: 'white',
-            lineHeight: 1,
-            marginTop: '2px', // optical alignment
+            width: '38px',
+            height: '38px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transform: 'rotate(45deg)',
+            borderRadius: '6px',
+            border: '2px solid #FFD700',
+            background: 'linear-gradient(135deg, #B91C1C, #991B1B)',
+            boxShadow: '0 0 12px rgba(255, 215, 0, 0.4)',
           }}
         >
-          A
+          <div
+            style={{
+              transform: 'rotate(-45deg)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '12px',
+                fontWeight: 900,
+                color: 'white',
+                lineHeight: 1,
+                letterSpacing: '-0.5px',
+              }}
+            >
+              AIO
+            </div>
+          </div>
         </div>
       </div>
     ),

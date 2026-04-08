@@ -230,7 +230,7 @@ export default function PMSPage() {
         {renderHeaderButton()}
       </div>
 
-      <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--slate-100)' }}>
+      <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--primary-900)' }}>
         {[
           { key: 'orders', label: 'Đơn mua hàng', icon: FileText },
           { key: 'suppliers', label: 'Nhà cung cấp', icon: Building2 },
@@ -239,7 +239,7 @@ export default function PMSPage() {
           return (
             <button key={tab.key} onClick={() => setActiveTab(tab.key as Tab)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
-                ${activeTab === tab.key ? 'bg-white text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
+                ${activeTab === tab.key ? 'bg-[var(--primary-600)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--primary-600)]/10 hover:text-[var(--text-primary)]'}`}>
               <Icon size={16} />{tab.label}
             </button>
           );

@@ -5,7 +5,7 @@ import {
   Users, Building2, UserPlus, Search,
   Download, Eye, Edit, BadgeCheck, Trash2,
   Plus, Calendar, User, Mail, Phone, Hash,
-  AlertTriangle, Save
+  AlertTriangle, Save, Shield
 } from 'lucide-react';
 import { Button, Badge, Card, Modal, Input, Select, StatCard, ConfirmModal } from '@/components/ui';
 
@@ -20,6 +20,7 @@ interface EmployeeData {
   level: string;
   status: string;
   hireDate: string;
+  sysRole: string;
 }
 
 interface DepartmentData {
@@ -77,7 +78,7 @@ export default function HMSPage() {
 
   // Forms
   const [empForm, setEmpForm] = useState({
-    name: '', email: '', phone: '', department: '', position: '', level: 'junior', status: 'active', hireDate: new Date().toISOString().split('T')[0]
+    name: '', email: '', phone: '', department: '', position: '', level: 'junior', status: 'active', hireDate: new Date().toISOString().split('T')[0], sysRole: ''
   });
   const [deptForm, setDeptForm] = useState({ name: '', code: '', color: '#3B82F6' });
 
@@ -227,7 +228,8 @@ export default function HMSPage() {
       position: emp.position,
       level: emp.level,
       status: emp.status,
-      hireDate: emp.hireDate
+      hireDate: emp.hireDate,
+      sysRole: emp.sysRole || ''
     });
     setIsEmployeeModalOpen(true);
   };
@@ -248,7 +250,7 @@ export default function HMSPage() {
       return (
         <Button icon={UserPlus} onClick={() => { 
           setEditingEmp(null); 
-          setEmpForm({ name: '', email: '', phone: '', department: '', position: '', level: 'junior', status: 'active', hireDate: new Date().toISOString().split('T')[0] });
+          setEmpForm({ name: '', email: '', phone: '', department: '', position: '', level: 'junior', status: 'active', hireDate: new Date().toISOString().split('T')[0], sysRole: '' });
           setIsEmployeeModalOpen(true); 
         }}>
           Thêm nhân viên
@@ -286,7 +288,7 @@ export default function HMSPage() {
         {renderHeaderButton()}
       </div>
 
-      <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--slate-100)' }}>
+      <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--primary-900)' }}>
         {[
           { key: 'overview', label: 'Tổng quan', icon: Eye },
           { key: 'employees', label: 'Nhân viên', icon: Users },
@@ -296,7 +298,7 @@ export default function HMSPage() {
           return (
             <button key={tab.key} onClick={() => setActiveTab(tab.key as Tab)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
-                ${activeTab === tab.key ? 'bg-white text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
+                ${activeTab === tab.key ? 'bg-[var(--primary-600)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--primary-600)]/10 hover:text-[var(--text-primary)]'}`}>
               <Icon size={16} />{tab.label}
             </button>
           );
@@ -342,7 +344,7 @@ export default function HMSPage() {
                 <div className="mt-4 space-y-2">
                   <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]"><Building2 size={12}/> {emp.department}</div>
                   <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]"><Mail size={12}/> {emp.email}</div>
-                  <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]"><Phone size={12}/> {emp.phone}</div>
+                  <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]"><Shield size={12} className="text-amber-500" /> Vai trò: {emp.sysRole || 'Chưa phân quyền'}</div>
                 </div>
               </Card>
             ))}
@@ -370,7 +372,7 @@ export default function HMSPage() {
               </div>
               <h3 className="font-bold text-lg">{dept.name}</h3>
               <p className="text-sm text-[var(--text-muted)] mt-1">{dept.employeeCount} nhân viên</p>
-              <div className="mt-4 w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--slate-100)' }}>
+              <div className="mt-4 w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--primary-900)' }}>
                 <div className="h-full" style={{ width: `${Math.min(100, (dept.employeeCount / (totalEmp || 1)) * 100)}%`, background: dept.color }} />
               </div>
             </Card>
@@ -392,6 +394,7 @@ export default function HMSPage() {
           <Input label="Ngày vào làm" type="date" value={empForm.hireDate} onChange={e => setEmpForm({...empForm, hireDate: e.target.value})} icon={Calendar} />
           <Select label="Trạng thái" value={empForm.status} onChange={e => setEmpForm({...empForm, status: e.target.value})} 
             options={Object.keys(STATUS_MAP).map(k => ({ value: k, label: STATUS_MAP[k].label }))} />
+          <Input label="Vai trò (Ghi chú phân quyền)" value={empForm.sysRole} onChange={e => setEmpForm({...empForm, sysRole: e.target.value})} placeholder="Vd: Administrator, Manager..." icon={Shield} />
         </div>
       </Modal>
 

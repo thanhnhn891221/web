@@ -148,15 +148,15 @@ export function Input({
           className={`
             w-full px-4 py-2.5 rounded-xl text-base md:text-sm outline-none
             transition-all duration-200
-            border bg-transparent
+            border bg-[var(--primary-900)] text-white
             focus:ring-2 focus:border-transparent
-            placeholder:text-[var(--text-muted)]
+            placeholder:text-white/50
             ${Icon ? 'pl-10' : ''}
             ${error ? 'border-[var(--rose)] ring-1 ring-[var(--rose)]' : ''}
             ${className}
           `}
           style={{
-            borderColor: error ? 'var(--rose)' : 'var(--border-color)',
+            borderColor: error ? 'var(--rose)' : 'var(--primary-700)',
             '--tw-ring-color': error ? 'var(--rose)' : 'var(--primary-400)',
           } as React.CSSProperties}
           {...props}
@@ -166,7 +166,7 @@ export function Input({
         <p className="text-xs" style={{ color: 'var(--rose)' }}>{error}</p>
       )}
       {helperText && !error && (
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{helperText}</p>
+        <p className="text-xs text-white/50">{helperText}</p>
       )}
     </div>
   );
@@ -197,13 +197,13 @@ export function Select({ label, error, options, className = '', id, ...props }: 
         className={`
           w-full px-4 py-2.5 rounded-xl text-base md:text-sm outline-none
           transition-all duration-200
-          border bg-transparent
+          border bg-[var(--primary-900)] text-white
           focus:ring-2 focus:border-transparent
           ${error ? 'border-[var(--rose)]' : ''}
           ${className}
         `}
         style={{
-          borderColor: error ? 'var(--rose)' : 'var(--border-color)',
+          borderColor: error ? 'var(--rose)' : 'var(--primary-700)',
           '--tw-ring-color': 'var(--primary-400)',
         } as React.CSSProperties}
         {...props}
@@ -324,23 +324,22 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
       <div
         className={`
           relative w-full ${modalSizes[size]} rounded-2xl animate-scale-in
-          flex flex-col max-h-[85vh] overflow-hidden border-t-[4px] border-t-[var(--primary-600)]
-          bg-gradient-to-br from-rose-50/95 to-white/95 backdrop-blur-xl
-          dark:from-slate-900/95 dark:to-slate-800/95 shadow-2xl border border-[var(--border-color)]
+          flex flex-col max-h-[85vh] overflow-hidden border-t-[4px] border-t-[var(--primary-500)]
+          bg-[var(--primary-950)] text-white shadow-2xl border border-[var(--primary-800)]
         `}
+        style={{ background: 'linear-gradient(135deg, var(--primary-900), var(--primary-950))' }}
       >
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-0">
           <div>
-            <h3 className="text-lg font-semibold">{title}</h3>
+            <h3 className="text-lg font-semibold text-white">{title}</h3>
             {description && (
-              <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{description}</p>
+              <p className="text-sm mt-1 text-white/70">{description}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-[var(--slate-100)] transition-colors -mt-1 -mr-1"
-            style={{ color: 'var(--text-muted)' }}
+            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors -mt-1 -mr-1 text-white/50 hover:text-white"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

@@ -196,14 +196,14 @@ export default function COREPage() {
           </div>
         </div>
         {/* Tab Buttons */}
-        <div className="flex gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-           <button onClick={() => setActiveTab('rbac')} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'rbac' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-700 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
+        <div className="flex gap-1.5 p-1 bg-[var(--primary-900)] rounded-xl">
+           <button onClick={() => setActiveTab('rbac')} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'rbac' ? 'bg-[var(--primary-600)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--primary-600)]/10 hover:text-[var(--text-primary)]'}`}>
              <Users size={14} /> Phân Quyền
            </button>
-           <button onClick={() => { setActiveTab('logs'); if (logs.length === 0) fetchLogs(1); }} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'logs' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-700 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
+           <button onClick={() => { setActiveTab('logs'); if (logs.length === 0) fetchLogs(1); }} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'logs' ? 'bg-[var(--primary-600)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--primary-600)]/10 hover:text-[var(--text-primary)]'}`}>
              <FileText size={14} /> Nhật ký (Log)
            </button>
-           <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'settings' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-700 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
+           <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'settings' ? 'bg-[var(--primary-600)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--primary-600)]/10 hover:text-[var(--text-primary)]'}`}>
              <Settings size={14} /> Cấu Hình
            </button>
         </div>

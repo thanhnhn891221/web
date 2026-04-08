@@ -169,17 +169,23 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
       {/* Right — Actions */}
       <div className="flex items-center gap-2">
         {/* Mobile Search */}
-        <button className="md:hidden p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+        <button 
+          onClick={() => alert("Chức năng tìm kiếm toàn cầu đang được tích hợp.")}
+          className="md:hidden p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
           <Search size={18} />
         </button>
 
         {/* Desktop Search */}
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--slate-50)] dark:bg-[var(--slate-800)] border border-[var(--border-color)] transition-colors min-w-[200px]">
+        <div 
+          onClick={() => alert("Chức năng tìm kiếm toàn cầu đang được tích hợp.")}
+          className="cursor-text hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--slate-50)] dark:bg-[var(--slate-800)] border border-[var(--border-color)] transition-colors min-w-[200px]">
           <Search size={16} className="text-[var(--text-muted)]" />
           <input
             type="text"
             placeholder="Tìm kiếm..."
-            className="bg-transparent text-sm outline-none w-full placeholder:text-[var(--text-muted)]"
+            onClick={(e) => { e.preventDefault(); alert("Chức năng tìm kiếm toàn cầu đang được tích hợp."); }}
+            className="cursor-text bg-transparent text-sm outline-none w-full placeholder:text-[var(--text-muted)] border-none pointer-events-none"
+            readOnly
           />
           <kbd className="hidden lg:inline text-[10px] px-1.5 py-0.5 rounded bg-[var(--border-color)] text-[var(--text-muted)] font-mono">
             ⌘K
@@ -206,11 +212,11 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
           </button>
           
           {showNotifications && (
-            <div className="absolute right-0 top-full mt-2 w-72 rounded-xl overflow-hidden animate-scale-in bg-white"
-                 style={{ boxShadow: 'var(--shadow-xl)', border: '1px solid var(--border-color)' }}>
-              <div className="p-3 border-b flex justify-between items-center" style={{ borderColor: 'var(--border-color)' }}>
+            <div className="absolute right-0 top-full mt-2 w-72 rounded-xl overflow-hidden animate-scale-in bg-[var(--primary-950)] text-white"
+                 style={{ boxShadow: '0 10px 25px rgba(0,0,0,0.5)', border: '1px solid var(--primary-800)' }}>
+              <div className="p-3 border-b flex justify-between items-center" style={{ borderColor: 'var(--primary-800)' }}>
                 <span className="font-semibold text-sm">Thông báo</span>
-                <span className="text-[10px] text-blue-500 cursor-pointer hover:underline">Đánh dấu tất cả đã đọc</span>
+                <span className="text-[10px] text-white/70 cursor-pointer hover:text-white transition-colors">Đánh dấu tất cả đã đọc</span>
               </div>
               <div className="p-8 flex flex-col items-center justify-center pointer-events-none opacity-50">
                 <Bell size={24} className="mb-2" />
@@ -244,29 +250,27 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
           {/* Dropdown Menu */}
           {showUserMenu && (
             <div
-              className="absolute right-0 top-full mt-2 w-64 rounded-xl overflow-hidden animate-scale-in"
+              className="absolute right-0 top-full mt-2 w-64 rounded-xl overflow-hidden animate-scale-in bg-[var(--primary-950)] text-white"
               style={{
-                background: 'var(--bg-card)',
-                boxShadow: 'var(--shadow-xl)',
-                border: '1px solid var(--border-color)',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                border: '1px solid var(--primary-800)',
               }}
             >
               {/* User Info */}
-              <div className="p-4 border-b" style={{ borderColor: 'var(--border-color)' }}>
+              <div className="p-4 border-b" style={{ borderColor: 'var(--primary-800)' }}>
                 <p className="font-semibold text-sm">{userName}</p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                <p className="text-xs mt-0.5 text-white/60">
                   {session?.user?.email || ''}
                 </p>
                 {primaryRole && (
                   <div className="flex items-center gap-1.5 mt-2">
-                    <Shield size={12} style={{ color: 'var(--primary-400)' }} />
-                    <span className="text-xs font-medium" style={{ color: 'var(--primary-400)' }}>
+                    <Shield size={12} className="text-[var(--primary-400)]" />
+                    <span className="text-xs font-medium text-[var(--primary-400)]">
                       {primaryRole}
                     </span>
                     {session?.roles && session.roles.length > 1 && (
                       <span
-                        className="text-[10px] px-1.5 py-0.5 rounded-full"
-                        style={{ background: 'var(--primary-50)', color: 'var(--primary-500)' }}
+                        className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--primary-800)] text-[var(--primary-100)]"
                       >
                         +{session.roles.length - 1} roles
                       </span>
@@ -278,27 +282,26 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
               {/* Menu Items */}
               <div className="p-2">
                 <button
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-[var(--slate-100)] transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-[var(--primary-800)] transition-colors text-left"
                   onClick={() => { setShowUserMenu(false); router.push('/dashboard/core?tab=settings'); }}
                 >
-                  <User size={16} style={{ color: 'var(--text-muted)' }} />
+                  <User size={16} className="text-white/60" />
                   <span>Hồ sơ cá nhân</span>
                 </button>
                 <button
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-[var(--slate-100)] transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-[var(--primary-800)] transition-colors text-left"
                   onClick={() => { setShowUserMenu(false); router.push('/dashboard/core'); }}
                 >
-                  <Shield size={16} style={{ color: 'var(--text-muted)' }} />
+                  <Shield size={16} className="text-white/60" />
                   <span>Quản lý vai trò</span>
                 </button>
               </div>
 
               {/* Logout */}
-              <div className="p-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
+              <div className="p-2 border-t" style={{ borderColor: 'var(--primary-800)' }}>
                 <button
                   onClick={() => { setShowUserMenu(false); setIsLogoutModalOpen(true); }}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
-                  style={{ color: 'var(--rose)' }}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-rose-500/20 transition-colors text-left text-rose-400 hover:text-rose-300"
                 >
                   <LogOut size={16} />
                   <span>Đăng xuất</span>

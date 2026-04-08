@@ -49,7 +49,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col lg:flex-row bg-white">
       {/* Brand Panel — Shown on Left for Desktop, Top for Mobile */}
       <div
-        className="w-full lg:w-[55%] relative overflow-hidden flex flex-col justify-center p-6 lg:p-12 animate-fade-in min-h-[320px] lg:min-h-[400px]"
+        className="w-full lg:w-[55%] relative overflow-hidden flex flex-col justify-center p-6 lg:p-12 animate-fade-in min-h-[300px] lg:min-h-[400px]"
         style={{
           background: 'linear-gradient(135deg, var(--primary-900) 0%, var(--primary-700) 100%)'
         }}
@@ -81,15 +81,15 @@ export default function LoginPage() {
 
         <div className="relative z-10 flex flex-col h-full justify-center">
           {/* Center Graphic: AIO.MS Network Node */}
-        <div className="relative z-10 my-auto flex items-center justify-center h-[500px]">
+        <div className="relative z-10 my-auto flex items-center justify-center h-[260px] lg:h-[500px] mt-4 lg:mt-0">
            {/* Center Glowing Core */}
-           <div className="relative flex items-center justify-center w-32 h-32 z-20">
-              <div className="absolute inset-0 rounded-2xl rotate-45 bg-[var(--primary-600)] shadow-[0_0_50px_var(--primary-600)] animate-pulse" />
-              <div className="absolute inset-2 rounded-xl rotate-45 bg-gradient-to-br from-yellow-400 to-yellow-600" />
-              <div className="absolute inset-2.5 rounded-xl rotate-45 bg-[var(--primary-900)] flex items-center justify-center">
+           <div className="relative flex items-center justify-center w-20 h-20 lg:w-32 lg:h-32 z-20">
+              <div className="absolute inset-0 rounded-xl lg:rounded-2xl rotate-45 bg-[var(--primary-600)] shadow-[0_0_50px_var(--primary-600)] animate-pulse" />
+              <div className="absolute inset-1.5 lg:inset-2 rounded-lg lg:rounded-xl rotate-45 bg-gradient-to-br from-yellow-400 to-yellow-600" />
+              <div className="absolute inset-2 lg:inset-2.5 rounded-lg lg:rounded-xl rotate-45 bg-[var(--primary-900)] flex items-center justify-center">
                  <div className="-rotate-45 text-center px-1">
-                    <p className="text-white font-black text-xl leading-none tracking-tight">AIO.MS</p>
-                    <p className="text-[#FFD700] text-[8px] mt-0.5 tracking-widest">ECOSYSTEM</p>
+                    <p className="text-white font-black text-xs lg:text-xl leading-none tracking-tight">AIO.MS</p>
+                    <p className="text-[#FFD700] text-[6px] lg:text-[8px] mt-0.5 tracking-widest">ECOSYSTEM</p>
                  </div>
               </div>
            </div>
@@ -99,29 +99,54 @@ export default function LoginPage() {
               const initials = ['C', 'P', 'F', 'W', 'T', 'Q', 'O', 'B', 'M', 'R', 'S', 'D', 'C', 'A', 'I', 'H', 'G'];
               const totalNodes = 17;
               const angle = (i * (360 / totalNodes)) * (Math.PI / 180);
-              const radius = i % 2 === 0 ? 110 : 160; // alternating distances, tightened for mobile
               
-              const x = Math.cos(angle) * radius;
-              const y = Math.sin(angle) * radius;
+              const radiusMobile = i % 2 === 0 ? 80 : 115;
+              const radiusDesktop = i % 2 === 0 ? 110 : 160;
+              
+              const xMobile = Math.cos(angle) * radiusMobile;
+              const yMobile = Math.sin(angle) * radiusMobile;
+              const xDesktop = Math.cos(angle) * radiusDesktop;
+              const yDesktop = Math.sin(angle) * radiusDesktop;
 
               return (
                  <React.Fragment key={i}>
-                    {/* Golden Connecting Line */}
+                    {/* Golden Connecting Line - Desktop */}
                     <div 
-                       className="absolute h-[1.5px] bg-gradient-to-r from-[#FFD700] to-transparent opacity-60 origin-left"
+                       className="absolute h-[1.5px] bg-gradient-to-r from-[#FFD700] to-transparent opacity-60 origin-left hidden lg:block"
                        style={{ 
-                          width: `${radius}px`, 
+                          width: `${radiusDesktop}px`, 
+                          top: '50%', left: '50%', 
+                          transform: `rotate(${i * (360 / totalNodes)}deg)` 
+                       }} 
+                    />
+                    {/* Golden Connecting Line - Mobile */}
+                    <div 
+                       className="absolute h-[1.5px] bg-gradient-to-r from-[#FFD700] to-transparent opacity-60 origin-left lg:hidden"
+                       style={{ 
+                          width: `${radiusMobile}px`, 
                           top: '50%', left: '50%', 
                           transform: `rotate(${i * (360 / totalNodes)}deg)` 
                        }} 
                     />
                     
-                    {/* Satellite Node */}
+                    {/* Satellite Node - Mobile */}
                     <div 
-                       className="absolute w-7 h-7 flex items-center justify-center rounded-xl bg-[var(--primary-800)] border-[1.5px] shadow-[0_0_15px_rgba(255,215,0,0.3)]"
+                       className="absolute flex items-center justify-center rounded-lg bg-[var(--primary-800)] border-[1.5px] shadow-[0_0_15px_rgba(255,215,0,0.3)] w-5 h-5 lg:hidden"
                        style={{ 
-                          top: `calc(50% + ${y}px - 14px)`, 
-                          left: `calc(50% + ${x}px - 14px)`,
+                          top: `calc(50% + ${yMobile}px - 10px)`, 
+                          left: `calc(50% + ${xMobile}px - 10px)`,
+                          borderColor: '#FFD700',
+                          animation: `pulse-slow 3s infinite ${i * 0.15}s`
+                       }}
+                    >
+                       <span className="text-[#FFD700] font-bold text-[8px] font-mono">{initials[i]}</span>
+                    </div>
+                    {/* Satellite Node - Desktop */}
+                    <div 
+                       className="absolute hidden lg:flex items-center justify-center rounded-xl bg-[var(--primary-800)] border-[1.5px] shadow-[0_0_15px_rgba(255,215,0,0.3)] w-7 h-7"
+                       style={{ 
+                          top: `calc(50% + ${yDesktop}px - 14px)`, 
+                          left: `calc(50% + ${xDesktop}px - 14px)`,
                           borderColor: '#FFD700',
                           animation: `pulse-slow 3s infinite ${i * 0.15}s`
                        }}

@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
       position: emp.position,
       level: emp.level || 'junior',
       status: emp.status,
+      sysRole: emp.sysRole || '',
       // Handle timezone safety for dates
       hireDate: emp.hireDate.toISOString().split('T')[0],
     }));

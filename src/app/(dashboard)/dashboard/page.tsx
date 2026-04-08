@@ -81,17 +81,21 @@ export default function DashboardPage() {
               style={mod.isEnabled ? { boxShadow: '0 4px 20px rgba(0,0,0,0.03)' } : {}}
             >
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+                className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-400 group-hover:scale-110 group-hover:-translate-y-2 relative overflow-hidden"
                 style={{
-                  background: mod.isEnabled ? `linear-gradient(135deg, ${mod.color}15, ${mod.color}05)` : 'var(--slate-100)',
-                  boxShadow: mod.isEnabled ? `0 0 15px ${mod.color}20` : 'none'
+                  background: mod.isEnabled ? `linear-gradient(135deg, ${mod.color}, ${mod.color}CC)` : 'var(--slate-200)',
+                  boxShadow: mod.isEnabled ? `inset 2px 2px 4px rgba(255,255,255,0.3), inset -3px -3px 6px rgba(0,0,0,0.2), 0 8px 16px ${mod.color}40` : 'none',
+                  border: mod.isEnabled ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent'
                 }}
               >
+                {/* 3D Gloss / Light reflection */}
+                <div className="absolute top-[-20%] left-[-20%] w-[140%] h-[70%] bg-white/20 rounded-b-[50%] pointer-events-none rotate-[-10deg]" />
+
                 <div
-                  className="w-6 h-6 rounded flex items-center justify-center"
-                  style={{ color: mod.color, opacity: mod.isEnabled ? 1 : 0.4 }}
+                  className="w-7 h-7 flex items-center justify-center relative z-10"
+                  style={{ color: '#fff', opacity: mod.isEnabled ? 1 : 0.4, filter: 'drop-shadow(0 3px 3px rgba(0,0,0,0.25))' }}
                 >
-                  {(() => { const Icon = ICON_MAP[mod.icon] || Layers; return <Icon size={24} />; })()}
+                  {(() => { const Icon = ICON_MAP[mod.icon] || Layers; return <Icon size={28} strokeWidth={2.2} />; })()}
                 </div>
               </div>
               <div className="text-center">

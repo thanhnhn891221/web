@@ -146,7 +146,7 @@ export function Input({
         <input
           id={inputId}
           className={`
-            w-full px-4 py-2.5 rounded-xl text-sm outline-none
+            w-full px-4 py-2.5 rounded-xl text-base md:text-sm outline-none
             transition-all duration-200
             border bg-transparent
             focus:ring-2 focus:border-transparent
@@ -195,7 +195,7 @@ export function Select({ label, error, options, className = '', id, ...props }: 
       <select
         id={selectId}
         className={`
-          w-full px-4 py-2.5 rounded-xl text-sm outline-none
+          w-full px-4 py-2.5 rounded-xl text-base md:text-sm outline-none
           transition-all duration-200
           border bg-transparent
           focus:ring-2 focus:border-transparent
@@ -313,7 +313,7 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-20 pb-10">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
@@ -324,12 +324,15 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
       <div
         className={`
           relative w-full ${modalSizes[size]} rounded-2xl animate-scale-in
-          flex flex-col max-h-[90vh]
+          flex flex-col max-h-[85vh] overflow-hidden border-t-[4px]
         `}
         style={{
           background: 'var(--bg-card)',
-          boxShadow: 'var(--shadow-xl)',
-          border: '1px solid var(--border-color)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          borderTopColor: 'var(--primary-600)',
+          borderLeft: '1px solid var(--border-color)',
+          borderRight: '1px solid var(--border-color)',
+          borderBottom: '1px solid var(--border-color)',
         }}
       >
         {/* Header */}

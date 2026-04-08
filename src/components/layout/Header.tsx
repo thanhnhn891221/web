@@ -24,11 +24,14 @@ interface SessionData {
   roles?: { code: string; name: string }[];
 }
 
+import { ConfirmModal } from '@/components/ui';
+
 export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThemeToggle }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [session, setSession] = useState<SessionData | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Load session from localStorage
@@ -36,9 +39,17 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
     try {
       const stored = localStorage.getItem('aio-session');
       if (stored) {
-        const parsed = JSON.parse(stored);
-        setSession(parsed);
+        setSession(JSON.parse(stored));
       }
+      
+      // Auto refresh session from API
+      fetch('/api/auth/me').then(res => res.json()).then(data => {
+         if (data.success && data.data && data.data.name !== session?.user?.name) {
+             const newSession = { ...JSON.parse(stored || '{}'), user: data.data };
+             localStorage.setItem('aio-session', JSON.stringify(newSession));
+             setSession(newSession);
+         }
+      }).catch(() => {});
     } catch {
       // ignore
     }
@@ -56,7 +67,7 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
   }, []);
 
   // Logout handler
-  const handleLogout = async () => {
+  const executeLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {
@@ -228,14 +239,14 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
               <div className="p-2">
                 <button
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-[var(--slate-100)] transition-colors text-left"
-                  onClick={() => { setShowUserMenu(false); }}
+                  onClick={() => { setShowUserMenu(false); router.push('/dashboard/core?tab=settings'); }}
                 >
                   <User size={16} style={{ color: 'var(--text-muted)' }} />
                   <span>Hồ sơ cá nhân</span>
                 </button>
                 <button
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-[var(--slate-100)] transition-colors text-left"
-                  onClick={() => { setShowUserMenu(false); }}
+                  onClick={() => { setShowUserMenu(false); router.push('/dashboard/core'); }}
                 >
                   <Shield size={16} style={{ color: 'var(--text-muted)' }} />
                   <span>Quản lý vai trò</span>
@@ -245,7 +256,7 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
               {/* Logout */}
               <div className="p-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
                 <button
-                  onClick={handleLogout}
+                  onClick={() => { setShowUserMenu(false); setIsLogoutModalOpen(true); }}
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
                   style={{ color: 'var(--rose)' }}
                 >
@@ -257,6 +268,16 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
           )}
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        title="Xác nhận Đăng xuất"
+        message="Sếp có chắc chắn muốn thoát khỏi hệ thống AIO.MS không? Phiên làm việc sẽ kết thúc ngay lập tức."
+        type="warning"
+        onConfirm={executeLogout}
+      />
     </header>
   );
 }

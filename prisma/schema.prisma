@@ -697,3 +697,28 @@ model Risk {
 
   @@map("risks")
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// GMS — Gateway Management System
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+model GatewayIntegration {
+  id          String   @id @default(cuid())
+  provider    String   // name of provider (e.g. MISA, SAP, ZALO)
+  category    String   // e-invoice, erp, timekeeping, message...
+  name        String   // Display name: 'MISA meInvoice', 'SAP S/4HANA'
+  apiKey      String?
+  endpoint    String?
+  webhookUrl  String?
+  status      String   @default("inactive") // active, inactive, error
+  lastSyncAt  DateTime?
+  errorLog    String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([provider])
+  @@index([category])
+  @@index([status])
+  @@map("gateway_integrations")
+}

@@ -166,6 +166,22 @@ export default function QMSPage() {
         <StatCard title="Đang chờ" value={checks.filter(c => c.result === 'pending').length} icon={Clock} color="var(--amber)" />
       </div>
 
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input type="text" placeholder="Tìm kiếm phiếu kiểm định..." className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] outline-none transition-all" />
+        </div>
+        <div className="sm:w-48 relative">
+          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <select className="w-full pl-10 pr-4 py-2 border rounded-lg appearance-none bg-white focus:ring-2 focus:ring-[var(--primary-500)] outline-none transition-all">
+            <option value="">Tất cả trạng thái</option>
+            <option value="passed">Đạt chuẩn</option>
+            <option value="failed">Lỗi (Defect)</option>
+            <option value="pending">Đang chờ</option>
+          </select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {checks.map(check => (
           <Card key={check.id} hover padding="md" className="group">

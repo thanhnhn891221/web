@@ -223,20 +223,37 @@ export default function TMSPage() {
         {renderHeaderButton()}
       </div>
 
-      <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--slate-100)' }}>
-        {[
-          { key: 'shipments', label: 'Lệnh giao hàng', icon: Truck },
-          { key: 'drivers', label: 'Tài xế & Đội xe', icon: User },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key as Tab)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
-                ${activeTab === tab.key ? 'bg-white text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
-              <Icon size={16} />{tab.label}
-            </button>
-          );
-        })}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--slate-100)' }}>
+          {[
+            { key: 'shipments', label: 'Lệnh giao hàng', icon: Truck },
+            { key: 'drivers', label: 'Tài xế & Đội xe', icon: User },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key as Tab)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                  ${activeTab === tab.key ? 'bg-white text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
+                <Icon size={16} />{tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input type="text" placeholder="Tìm kiếm dữ liệu..." className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-[var(--primary-500)] outline-none transition-all" />
+          </div>
+          <div className="relative w-full sm:w-40">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <select className="w-full pl-10 pr-4 py-2 border rounded-lg appearance-none bg-white focus:ring-2 focus:ring-[var(--primary-500)] outline-none transition-all">
+              <option value="">Tất cả</option>
+              <option value="active">Đang xử lý</option>
+              <option value="completed">Hoàn thành</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {activeTab === 'shipments' && (

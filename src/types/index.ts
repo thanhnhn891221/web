@@ -72,7 +72,7 @@ export interface ModuleInfo {
   icon: string; // Lucide icon name
   color: string; // HSL color
   href: string;
-  group: 'foundation' | 'operations' | 'market' | 'finance';
+  group: 'support' | 'operations' | 'market' | 'system' | 'bi';
   isEnabled: boolean;
   order: number;
 }

@@ -1,10 +1,45 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { MODULES } from '@/lib/modules';
 
 const prisma = new PrismaClient();
 
+/**
+ * Auto-sync: Ensure every module in the frontend registry also exists in DB.
+ * Uses upsert so it never duplicates and always keeps data fresh.
+ */
+async function autoSyncModules() {
+  for (const mod of MODULES) {
+    await prisma.module.upsert({
+      where: { code: mod.code },
+      update: { 
+        name: mod.name, 
+        nameVi: mod.nameVi,
+        groupCode: mod.group,
+        icon: mod.icon,
+        color: mod.color,
+        href: mod.href,
+        orderIndex: mod.order 
+      },
+      create: {
+        code: mod.code,
+        name: mod.name,
+        nameVi: mod.nameVi,
+        groupCode: mod.group,
+        icon: mod.icon,
+        color: mod.color,
+        href: mod.href,
+        orderIndex: mod.order,
+      },
+    });
+  }
+}
+
 export async function GET(request: Request) {
   try {
+    // Auto-sync modules from frontend registry to DB on every load
+    await autoSyncModules();
+
     const roles = await prisma.role.findMany({
       include: {
         permissions: {
@@ -16,7 +51,6 @@ export async function GET(request: Request) {
       orderBy: { code: 'asc' }
     });
     
-    // Also fetch all available modules so frontend can map them if missing
     const allModules = await prisma.module.findMany({
       orderBy: { orderIndex: 'asc' }
     });
@@ -42,16 +76,13 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Wrap in transaction: replace all permissions for this role
     await prisma.$transaction(async (tx) => {
-      // 1. Delete old permissions for this role
       await tx.roleModulePermission.deleteMany({
         where: { roleId }
       });
 
-      // 2. Insert new permissions safely
       if (permissions.length > 0) {
-        const dataToInsert = permissions.map(p => ({
+        const dataToInsert = permissions.map((p: any) => ({
           roleId,
           moduleId: p.moduleId,
           canView: Boolean(p.canView),

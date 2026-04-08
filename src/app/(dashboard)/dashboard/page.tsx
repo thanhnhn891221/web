@@ -6,10 +6,20 @@ import {
   Users, ShoppingCart, TrendingUp, DollarSign,
   Activity, Clock, CheckCircle, AlertTriangle, Zap,
   Layers, Shield, BarChart3, Settings, Globe, MoreHorizontal,
-  ChevronRight
+  ChevronRight, Factory, Warehouse, Truck, Server,
+  Calculator, Gauge, Megaphone, Lightbulb, ClipboardList,
+  Network, LucideIcon
 } from 'lucide-react';
 import { MODULES, MODULE_GROUPS, getModulesByGroup } from '@/lib/modules';
 import { StatCard } from '@/components/ui';
+
+// Map each module's icon string to the actual Lucide component
+const ICON_MAP: Record<string, LucideIcon> = {
+  BarChart3, Shield, Network, Factory, ShoppingCart,
+  CheckCircle, ClipboardList, Warehouse, Truck, Server,
+  Users, Calculator, Gauge, Megaphone, Lightbulb,
+  TrendingUp, Layers,
+};
 
 // Fake Data
 const stats = [
@@ -81,7 +91,7 @@ export default function DashboardPage() {
                   className="w-6 h-6 rounded flex items-center justify-center"
                   style={{ color: mod.color, opacity: mod.isEnabled ? 1 : 0.4 }}
                 >
-                  <Layers size={24} /> {/* Would map to mod.icon dynamically in real app for SVG */}
+                  {(() => { const Icon = ICON_MAP[mod.icon] || Layers; return <Icon size={24} />; })()}
                 </div>
               </div>
               <div className="text-center">

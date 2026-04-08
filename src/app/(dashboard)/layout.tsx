@@ -43,11 +43,19 @@ export default function DashboardLayout({
       />
 
       <main
-        className={`pt-16 min-h-screen transition-all duration-300 ${
+        className={`pt-16 min-h-screen transition-all duration-300 relative ${
           sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-[260px]'
         }`}
       >
-        <div className="p-6 animate-fade-in">
+        {/* Ambient Red Gradient — Corporate Identity Background */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'linear-gradient(180deg, hsla(348, 75%, 46%, 0.08) 0%, hsla(348, 75%, 46%, 0.03) 15%, transparent 35%)',
+        }} />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] pointer-events-none opacity-[0.04] blur-3xl" style={{
+          background: 'radial-gradient(circle, hsl(38, 90%, 50%), transparent 70%)',
+        }} />
+
+        <div className="p-6 animate-fade-in relative z-0">
           {children}
         </div>
       </main>

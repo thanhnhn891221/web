@@ -11,7 +11,7 @@ function ForbiddenContent() {
   const moduleCode = searchParams.get('module') || 'Unknown';
 
   const moduleNames: Record<string, string> = {
-    CORE: 'Quản trị Hệ thống',
+    KMS: 'Quản trị Hệ thống',
     IMS: 'Quản lý CNTT',
     HMS: 'Quản lý Nhân sự',
     PMS: 'Quản lý Mua hàng',

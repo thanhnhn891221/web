@@ -148,7 +148,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="relative z-10 shrink-0 w-full sm:w-auto">
-          <button className="w-full sm:w-auto px-6 py-3 bg-white text-primary-700 font-bold rounded-xl shadow-lg hover:shadow-xl hover:bg-slate-50 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
+          <button className="w-full sm:w-auto px-6 py-3 bg-white text-[var(--primary-700)] font-bold rounded-xl shadow-lg hover:shadow-xl hover:bg-slate-50 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
             Xử lý ngay <ChevronRight size={16} />
           </button>
         </div>

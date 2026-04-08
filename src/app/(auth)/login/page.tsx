@@ -96,7 +96,7 @@ export default function LoginPage() {
 
            {/* 17 Satellite Nodes around the center */}
            {[...Array(17)].map((_, i) => {
-              const initials = ['C', 'P', 'F', 'W', 'T', 'Q', 'O', 'B', 'M', 'R', 'S', 'D', 'C', 'A', 'I', 'H', 'G'];
+              const initials = ['K', 'P', 'F', 'W', 'T', 'Q', 'O', 'B', 'M', 'R', 'S', 'D', 'C', 'A', 'I', 'H', 'G'];
               const totalNodes = 17;
               const angle = (i * (360 / totalNodes)) * (Math.PI / 180);
               

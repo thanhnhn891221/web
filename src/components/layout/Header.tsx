@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, Sun, Moon, Menu, ChevronRight, LogOut, User, Shield } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Menu, ChevronRight, LogOut, User, Shield, Compass } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { MODULES } from '@/lib/modules';
 
@@ -130,6 +130,7 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
   };
 
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   return (
     <header
@@ -170,14 +171,14 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
       <div className="flex items-center gap-2">
         {/* Mobile Search */}
         <button 
-          onClick={() => alert("Chức năng tìm kiếm toàn cầu đang được tích hợp.")}
+          onClick={() => setIsSearchOpen(true)}
           className="md:hidden p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
           <Search size={18} />
         </button>
 
         {/* Desktop Search */}
         <div 
-          onClick={() => alert("Chức năng tìm kiếm toàn cầu đang được tích hợp.")}
+          onClick={() => setIsSearchOpen(true)}
           className="cursor-text hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--slate-50)] dark:bg-[var(--slate-800)] border border-[var(--border-color)] transition-colors min-w-[200px]">
           <Search size={16} className="text-[var(--text-muted)]" />
           <input
@@ -283,14 +284,14 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
               <div className="p-2">
                 <button
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-[var(--primary-800)] transition-colors text-left"
-                  onClick={() => { setShowUserMenu(false); router.push('/dashboard/core?tab=settings'); }}
+                  onClick={() => { setShowUserMenu(false); router.push('/dashboard/kms?tab=settings'); }}
                 >
                   <User size={16} className="text-white/60" />
                   <span>Hồ sơ cá nhân</span>
                 </button>
                 <button
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-[var(--primary-800)] transition-colors text-left"
-                  onClick={() => { setShowUserMenu(false); router.push('/dashboard/core'); }}
+                  onClick={() => { setShowUserMenu(false); router.push('/dashboard/kms'); }}
                 >
                   <Shield size={16} className="text-white/60" />
                   <span>Quản lý vai trò</span>
@@ -311,6 +312,32 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
           )}
         </div>
       </div>
+
+      {/* Search Modal */}
+      {isSearchOpen && (
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-20 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsSearchOpen(false)}>
+          <div 
+            className="w-full max-w-2xl bg-[var(--bg-card)] rounded-xl shadow-2xl overflow-hidden border border-[var(--border-color)] animate-scale-in"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center px-4 py-3 border-b border-[var(--border-color)]">
+              <Search className="text-[var(--text-muted)] mr-3" size={20} />
+              <input 
+                autoFocus
+                type="text" 
+                placeholder="Tìm kiếm ứng dụng, tài liệu, báo cáo..." 
+                className="w-full bg-transparent border-none outline-none text-[var(--text-primary)] text-lg placeholder-[var(--text-muted)]"
+              />
+              <kbd className="hidden sm:inline-block ml-3 px-2 py-1 text-xs border border-[var(--border-color)] rounded bg-[var(--slate-100)] dark:bg-[var(--primary-900)] text-[var(--text-muted)]">ESC</kbd>
+            </div>
+            <div className="p-4 bg-[var(--slate-50)] dark:bg-[var(--primary-950)]/50 min-h-[300px] flex flex-col items-center justify-center text-center">
+              <Compass size={48} className="text-[var(--primary-400)] mb-4 opacity-50" />
+              <p className="text-[var(--text-secondary)] font-medium">Bắt đầu gõ để tìm kiếm trên AIO.MS Workspace</p>
+              <p className="text-[var(--text-muted)] text-sm mt-2">Hỗ trợ tìm kiếm: Phân hệ, Cảnh báo, Nhân viên, Mã đơn hàng...</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Logout Confirmation Modal */}
       <ConfirmModal

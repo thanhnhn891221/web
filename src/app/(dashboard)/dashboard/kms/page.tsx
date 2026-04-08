@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Button, Card, Modal, Input, Select, StatCard, ConfirmModal } from '@/components/ui';
 
-export default function COREPage() {
+export default function KMSPage() {
   const [activeTab, setActiveTab] = useState<'rbac' | 'logs' | 'settings'>('rbac');
   
   // Settings State
@@ -191,7 +191,7 @@ export default function COREPage() {
              <Shield size={22} className="text-primary-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">CORE — Trung tâm Quản trị</h1>
+            <h1 className="text-2xl font-bold tracking-tight">KMS — Kernel Management System</h1>
             <p className="text-sm text-slate-500">Phân quyền RBAC, Nhật ký Hệ thống & Cấu hình</p>
           </div>
         </div>

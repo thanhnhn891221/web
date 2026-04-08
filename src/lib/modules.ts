@@ -21,14 +21,14 @@ export const MODULES: ModuleInfo[] = [
 
   // ── Nhóm: System ──────────────────────────────────
   {
-    id: 'core',
-    code: 'CORE',
-    name: 'Admin & Core',
+    id: 'kms',
+    code: 'KMS',
+    name: 'Kernel Management System',
     nameVi: 'Quản trị Hệ thống',
     description: 'Đăng nhập, phân quyền (RBAC), cấu hình hệ thống',
     icon: 'Shield',
     color: 'hsl(348, 75%, 46%)', // Đỏ Primary
-    href: '/dashboard/core',
+    href: '/dashboard/kms',
     group: 'system',
     isEnabled: true,
     order: 1,

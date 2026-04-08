@@ -105,3 +105,18 @@ export async function PUT(request: Request) {
     );
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const { code, name } = await request.json();
+    if (!code || !name) {
+      return NextResponse.json({ success: false, error: 'Thiếu code hoặc name' }, { status: 400 });
+    }
+    const role = await prisma.role.create({
+      data: { code, name }
+    });
+    return NextResponse.json({ success: true, data: role });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: 'Lỗi tạo role: ' + error.message }, { status: 500 });
+  }
+}

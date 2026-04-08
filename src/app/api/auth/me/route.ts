@@ -1,8 +1,6 @@
-// AIO.MS — Get Current User API
-// GET /api/auth/me
-
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
+import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,14 +23,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Query database for fresh user info
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      include: {
+        userRoles: {
+          include: { role: true }
+        }
+      }
+    });
+
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Không tìm thấy người dùng' }, { status: 404 });
+    }
+
     return NextResponse.json({
       success: true,
       data: {
-        userId: payload.userId,
-        email: payload.email,
-        name: payload.name,
-        roles: payload.roles,
-        permissions: payload.permissions,
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        roles: user.userRoles.map((r: any) => ({
+           id: r.role.id,
+           code: r.role.code,
+           name: r.role.name
+        })),
+        permissions: payload.permissions, // Permissions can remain from token for this purpose, or refetch
       },
     });
   } catch {

@@ -40,6 +40,14 @@ const recentActivities = [
 export default function DashboardPage() {
   const [userName, setUserName] = useState('Quản trị viên');
 
+  // Get current time greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Chào buổi sáng';
+    if (hour < 18) return 'Chào buổi chiều';
+    return 'Chào buổi tối';
+  };
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem('aio-session');
@@ -83,13 +91,13 @@ export default function DashboardPage() {
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-400 group-hover:scale-110 group-hover:-translate-y-2 relative overflow-hidden"
                 style={{
-                  background: mod.isEnabled ? `linear-gradient(135deg, ${mod.color}, ${mod.color}CC)` : 'var(--slate-200)',
-                  boxShadow: mod.isEnabled ? `inset 2px 2px 4px rgba(255,255,255,0.3), inset -3px -3px 6px rgba(0,0,0,0.2), 0 8px 16px ${mod.color}40` : 'none',
-                  border: mod.isEnabled ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent'
+                  background: mod.isEnabled ? `linear-gradient(135deg, var(--primary-700), var(--primary-800))` : 'var(--slate-200)',
+                  boxShadow: mod.isEnabled ? `inset 2px 2px 4px rgba(255,255,255,0.2), inset -3px -3px 6px rgba(0,0,0,0.4), 0 8px 16px var(--primary-800)` : 'none',
+                  border: mod.isEnabled ? '1px solid var(--primary-500)' : '1px solid transparent'
                 }}
               >
                 {/* 3D Gloss / Light reflection */}
-                <div className="absolute top-[-20%] left-[-20%] w-[140%] h-[70%] bg-white/20 rounded-b-[50%] pointer-events-none rotate-[-10deg]" />
+                <div className="absolute top-[-20%] left-[-20%] w-[140%] h-[70%] bg-white/10 rounded-b-[50%] pointer-events-none rotate-[-10deg]" />
 
                 <div
                   className="w-7 h-7 flex items-center justify-center relative z-10"
@@ -133,7 +141,7 @@ export default function DashboardPage() {
             <span>•</span>
             <span className="text-xs">{new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</span>
           </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-2">Chào buổi sáng, {userName}!</h1>
+          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-2">{getGreeting()}, {userName}!</h1>
           <p className="text-sm sm:text-base opacity-90 max-w-lg mb-6 sm:mb-0">
             Hôm nay bạn có <strong className="text-accent-300">3 báo cáo</strong> cần phê duyệt và <strong className="text-accent-300">1 cảnh báo</strong> tồn kho.
           </p>

@@ -280,11 +280,7 @@ export function Card({ children, className = '', hover = false, padding = 'md', 
 
   return (
     <div
-      className={`card ${paddingMap[padding]} ${hover ? 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all' : ''} ${className}`}
-      style={{
-        background: 'linear-gradient(135deg, var(--rose-50), var(--slate-50))',
-        border: '1px solid var(--rose-100)',
-      }}
+      className={`card ${paddingMap[padding]} ${hover ? 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all' : ''} bg-gradient-to-br from-rose-50 to-slate-50 border border-rose-100 dark:from-slate-900 dark:to-slate-800 dark:border-slate-800 ${className}`}
       onClick={onClick}
     >
       {children}
@@ -328,16 +324,10 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
       <div
         className={`
           relative w-full ${modalSizes[size]} rounded-2xl animate-scale-in
-          flex flex-col max-h-[85vh] overflow-hidden border-t-[4px]
+          flex flex-col max-h-[85vh] overflow-hidden border-t-[4px] border-t-[var(--primary-600)]
+          bg-gradient-to-br from-rose-50/95 to-white/95 backdrop-blur-xl
+          dark:from-slate-900/95 dark:to-slate-800/95 shadow-2xl border border-[var(--border-color)]
         `}
-        style={{
-          background: 'linear-gradient(135deg, var(--rose-50) 0%, #ffffff 100%)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          borderTopColor: 'var(--primary-600)',
-          borderLeft: '1px solid var(--border-color)',
-          borderRight: '1px solid var(--border-color)',
-          borderBottom: '1px solid var(--border-color)',
-        }}
       >
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-0">

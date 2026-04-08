@@ -49,10 +49,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col lg:flex-row bg-white">
       {/* Brand Panel — Shown on Left for Desktop, Top for Mobile */}
       <div
-        className="w-full lg:w-[55%] relative overflow-hidden flex flex-col justify-between p-6 lg:p-12 animate-fade-in"
+        className="w-full lg:w-[55%] relative overflow-hidden flex flex-col justify-center p-6 lg:p-12 animate-fade-in min-h-[320px] lg:min-h-[400px]"
         style={{
-          background: 'linear-gradient(135deg, var(--primary-900) 0%, var(--primary-700) 100%)',
-          minHeight: 'min(400px, 45vh)'
+          background: 'linear-gradient(135deg, var(--primary-900) 0%, var(--primary-700) 100%)'
         }}
       >
         {/* Background Decoratives */}
@@ -80,18 +79,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="relative z-10 flex flex-col h-full justify-center lg:justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center bg-white shadow-xl">
-              <span className="font-black text-xl lg:text-2xl" style={{ color: 'var(--primary-600)' }}>A</span>
-            </div>
-            <div>
-              <h1 className="text-white text-2xl lg:text-3xl font-bold tracking-tight leading-none">AIO.MS</h1>
-              <p className="text-white/60 text-[10px] lg:text-xs tracking-[0.2em] uppercase mt-1">Enterprise Suite</p>
-            </div>
-          </div>
-
+        <div className="relative z-10 flex flex-col h-full justify-center">
           {/* Center Graphic: AIO.MS Network Node */}
         <div className="relative z-10 my-auto flex items-center justify-center h-[500px]">
            {/* Center Glowing Core */}
@@ -108,18 +96,19 @@ export default function LoginPage() {
 
            {/* 17 Satellite Nodes around the center */}
            {[...Array(17)].map((_, i) => {
+              const initials = ['C', 'P', 'F', 'W', 'T', 'Q', 'O', 'B', 'M', 'R', 'S', 'D', 'C', 'A', 'I', 'H', 'G'];
               const totalNodes = 17;
               const angle = (i * (360 / totalNodes)) * (Math.PI / 180);
-              const radius = i % 2 === 0 ? 140 : 200; // alternates distance
+              const radius = i % 2 === 0 ? 110 : 160; // alternating distances, tightened for mobile
               
               const x = Math.cos(angle) * radius;
               const y = Math.sin(angle) * radius;
 
               return (
                  <React.Fragment key={i}>
-                    {/* Connecting Line */}
+                    {/* Golden Connecting Line */}
                     <div 
-                       className="absolute h-px bg-gradient-to-r from-[var(--primary-500)] to-transparent opacity-40 origin-left"
+                       className="absolute h-[1.5px] bg-gradient-to-r from-[#FFD700] to-transparent opacity-60 origin-left"
                        style={{ 
                           width: `${radius}px`, 
                           top: '50%', left: '50%', 
@@ -129,14 +118,15 @@ export default function LoginPage() {
                     
                     {/* Satellite Node */}
                     <div 
-                       className="absolute w-8 h-8 flex items-center justify-center rounded-xl bg-black/30 backdrop-blur-md border border-[var(--primary-500)] shadow-lg"
+                       className="absolute w-7 h-7 flex items-center justify-center rounded-xl bg-[var(--primary-800)] border-[1.5px] shadow-[0_0_15px_rgba(255,215,0,0.3)]"
                        style={{ 
-                          top: `calc(50% + ${y}px - 16px)`, 
-                          left: `calc(50% + ${x}px - 16px)`,
-                          animation: `pulse-slow 3s infinite ${i * 0.2}s`
+                          top: `calc(50% + ${y}px - 14px)`, 
+                          left: `calc(50% + ${x}px - 14px)`,
+                          borderColor: '#FFD700',
+                          animation: `pulse-slow 3s infinite ${i * 0.15}s`
                        }}
                     >
-                       <div className="w-2 h-2 rounded-full bg-[#FFD700] shadow-[0_0_10px_#FFD700]" />
+                       <span className="text-[#FFD700] font-bold text-[11px] font-mono">{initials[i]}</span>
                     </div>
                  </React.Fragment>
               );
@@ -226,7 +216,7 @@ export default function LoginPage() {
               ) : (
                 <>
                   <LogIn size={18} />
-                  Nhập Cổng Hệ Thống
+                  Đăng nhập
                 </>
               )}
             </button>

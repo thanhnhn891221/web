@@ -140,7 +140,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           transition-transform duration-300 ease-in-out
           ${collapsed ? '-translate-x-full md:translate-x-0 md:w-[72px]' : 'translate-x-0 w-[260px]'}
         `}
-        style={{ background: 'var(--primary-950)' }}
+        style={{ background: 'var(--primary-800)' }}
       >
         {/* Logo */}
         <div className="flex items-center h-16 px-4 border-b border-white/10">
@@ -179,13 +179,13 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <LayoutDashboard size={20} className="flex-shrink-0" />
             {!collapsed && <span className="text-sm font-bold">Tổng quan</span>}
           </Link>
-          
-          {/* Standalone BMS BI Modul */}
-          {bmsModule && renderModuleLink(bmsModule, isActive(bmsModule.href), 'bi')}
         </div>
 
         {/* Module Groups */}
         <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-5 mt-2 custom-scrollbar">
+          {/* Standalone BMS BI Modul now inside scroller */}
+          {bmsModule && renderModuleLink(bmsModule, isActive(bmsModule.href), 'bi')}
+
           {groupsToMap.map(([groupKey, groupInfo]) => {
             const groupModules = MODULES.filter((m) => m.group === groupKey).sort((a,b) => a.order - b.order);
             if (!groupModules.length) return null;

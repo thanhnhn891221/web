@@ -22,6 +22,9 @@ export default function COREPage() {
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [permissionsMap, setPermissionsMap] = useState<Record<string, any>>({});
   const [isLoadingRBAC, setIsLoadingRBAC] = useState(true);
+  const [isAddRoleModalOpen, setIsAddRoleModalOpen] = useState(false);
+  const [newRoleForm, setNewRoleForm] = useState({ code: '', name: '' });
+  const [isAddingRole, setIsAddingRole] = useState(false);
 
   // Audit Logs State
   const [logs, setLogs] = useState<any[]>([]);
@@ -126,6 +129,27 @@ export default function COREPage() {
      finally { setIsSaving(false); }
   };
 
+  const handleCreateRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAddingRole(true);
+    try {
+       const res = await fetch('/api/core/roles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newRoleForm)
+       });
+       if (res.ok) {
+          setIsAddRoleModalOpen(false);
+          setNewRoleForm({ code: '', name: '' });
+          fetchRBAC();
+       } else {
+          const js = await res.json();
+          alert(js.error || 'Lỗi tạo vai trò');
+       }
+    } catch { alert('Lỗi mạng, thử lại sau'); }
+    finally { setIsAddingRole(false); }
+  };
+
   // ─── Settings Handlers ───────────────────────────────────
   const executeUpdateSetting = async (key: string, value: string) => {
     try {
@@ -172,14 +196,14 @@ export default function COREPage() {
           </div>
         </div>
         {/* Tab Buttons */}
-        <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
-           <button onClick={() => setActiveTab('rbac')} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'rbac' ? 'bg-white shadow-sm text-primary-700' : 'text-slate-500 hover:text-slate-700'}`}>
+        <div className="flex gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+           <button onClick={() => setActiveTab('rbac')} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'rbac' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-700 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
              <Users size={14} /> Phân Quyền
            </button>
-           <button onClick={() => { setActiveTab('logs'); if (logs.length === 0) fetchLogs(1); }} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'logs' ? 'bg-white shadow-sm text-primary-700' : 'text-slate-500 hover:text-slate-700'}`}>
+           <button onClick={() => { setActiveTab('logs'); if (logs.length === 0) fetchLogs(1); }} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'logs' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-700 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
              <FileText size={14} /> Nhật ký (Log)
            </button>
-           <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'settings' ? 'bg-white shadow-sm text-primary-700' : 'text-slate-500 hover:text-slate-700'}`}>
+           <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'settings' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-700 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
              <Settings size={14} /> Cấu Hình
            </button>
         </div>
@@ -198,7 +222,10 @@ export default function COREPage() {
          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 animate-fade-in">
             {/* Roles Sidebar */}
             <div className="xl:col-span-1 space-y-3">
-               <p className="font-bold text-xs text-slate-500 uppercase tracking-widest">Danh sách Vai trò</p>
+               <div className="flex items-center justify-between">
+                  <p className="font-bold text-xs text-slate-500 uppercase tracking-widest">Danh sách Vai trò</p>
+                  <Button size="sm" icon={Plus} onClick={() => setIsAddRoleModalOpen(true)}>Tạo mới</Button>
+               </div>
                <div className="flex flex-col gap-2">
                   {isLoadingRBAC ? <div className="animate-pulse space-y-2"><div className="h-12 bg-slate-100 rounded-lg"></div><div className="h-12 bg-slate-100 rounded-lg"></div></div> : 
                     rolesData.map(r => (
@@ -395,6 +422,23 @@ export default function COREPage() {
             </div>
          </div>
       )}
+
+      {/* Create Role Modal */}
+      <Modal isOpen={isAddRoleModalOpen} onClose={() => setIsAddRoleModalOpen(false)} title="Tạo Vai trò mới" size="sm">
+        <form onSubmit={handleCreateRole} className="space-y-4">
+          <div>
+             <label className="text-xs font-bold text-slate-500">Mã Vai Trò (Code)</label>
+             <Input value={newRoleForm.code} onChange={e => setNewRoleForm({...newRoleForm, code: e.target.value.toUpperCase()})} placeholder="Vd: MANAGER_HR" required />
+          </div>
+          <div>
+             <label className="text-xs font-bold text-slate-500">Tên Hiển Thị (Name)</label>
+             <Input value={newRoleForm.name} onChange={e => setNewRoleForm({...newRoleForm, name: e.target.value})} placeholder="Vd: Quản lý Nhân sự" required />
+          </div>
+          <div className="flex justify-end pt-4">
+             <Button type="submit" disabled={isAddingRole}>{isAddingRole ? 'Đang tạo...' : 'Lưu Vai trò'}</Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Add Setting Modal */}
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Thêm cấu hình hệ thống mới"

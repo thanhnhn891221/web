@@ -92,32 +92,56 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Center Content */}
-          <div className="mt-8 mb-4 lg:mt-auto lg:mb-auto max-w-xl">
-            <h2 className="text-2xl lg:text-5xl font-bold text-white leading-tight">
-              Hệ Sinh Thái<br className="hidden lg:block"/> Mạng Lưới
-            </h2>
-            <p className="text-white/80 mt-2 lg:mt-4 text-xs lg:text-base leading-relaxed">
-              Trạm điều khiển trung tâm kết nối <strong style={{ color: 'var(--accent-400)' }}>17 phân hệ</strong> độc lập. Quản trị toàn diện từ một điểm duy nhất.
-            </p>
-
-            {/* Module Groups - Hidden on very small screens to save space, but visible on md/lg */}
-            <div className="hidden sm:grid mt-8 grid-cols-2 md:grid-cols-4 gap-4">
-               {[
-                 { name: 'HỆ THỐNG', desc: 'Core & Gateway', icon: Shield },
-                 { name: 'VẬN HÀNH', desc: 'Sản xuất & Kho', icon: Database },
-                 { name: 'THỊ TRƯỜNG', desc: 'Bán hàng & MKT', icon: Network },
-                 { name: 'HỖ TRỢ', desc: 'Nhân sự & Kế toán', icon: Layers },
-               ].map((mod, idx) => (
-                 <div key={idx} className="flex flex-col items-center bg-black/20 backdrop-blur-md p-3 lg:p-4 rounded-xl border border-white/10">
-                    <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center mb-2" style={{ background: 'var(--accent-500)', color: 'var(--primary-900)' }}>
-                       <mod.icon size={16} />
-                    </div>
-                    <p className="text-white font-bold text-[10px] lg:text-xs text-center">{mod.name}</p>
+          {/* Center Graphic: AIO.MS Network Node */}
+        <div className="relative z-10 my-auto flex items-center justify-center h-[500px]">
+           {/* Center Glowing Core */}
+           <div className="relative flex items-center justify-center w-32 h-32 z-20">
+              <div className="absolute inset-0 rounded-2xl rotate-45 bg-[var(--primary-600)] shadow-[0_0_50px_var(--primary-600)] animate-pulse" />
+              <div className="absolute inset-2 rounded-xl rotate-45 bg-gradient-to-br from-yellow-400 to-yellow-600" />
+              <div className="absolute inset-2.5 rounded-xl rotate-45 bg-[var(--primary-900)] flex items-center justify-center">
+                 <div className="-rotate-45 text-center px-1">
+                    <p className="text-white font-black text-xl leading-none tracking-tight">AIO.MS</p>
+                    <p className="text-[#FFD700] text-[8px] mt-0.5 tracking-widest">ECOSYSTEM</p>
                  </div>
-               ))}
-            </div>
-          </div>
+              </div>
+           </div>
+
+           {/* 17 Satellite Nodes around the center */}
+           {[...Array(17)].map((_, i) => {
+              const totalNodes = 17;
+              const angle = (i * (360 / totalNodes)) * (Math.PI / 180);
+              const radius = i % 2 === 0 ? 140 : 200; // alternates distance
+              
+              const x = Math.cos(angle) * radius;
+              const y = Math.sin(angle) * radius;
+
+              return (
+                 <React.Fragment key={i}>
+                    {/* Connecting Line */}
+                    <div 
+                       className="absolute h-px bg-gradient-to-r from-[var(--primary-500)] to-transparent opacity-40 origin-left"
+                       style={{ 
+                          width: `${radius}px`, 
+                          top: '50%', left: '50%', 
+                          transform: `rotate(${i * (360 / totalNodes)}deg)` 
+                       }} 
+                    />
+                    
+                    {/* Satellite Node */}
+                    <div 
+                       className="absolute w-8 h-8 flex items-center justify-center rounded-xl bg-black/30 backdrop-blur-md border border-[var(--primary-500)] shadow-lg"
+                       style={{ 
+                          top: `calc(50% + ${y}px - 16px)`, 
+                          left: `calc(50% + ${x}px - 16px)`,
+                          animation: `pulse-slow 3s infinite ${i * 0.2}s`
+                       }}
+                    >
+                       <div className="w-2 h-2 rounded-full bg-[#FFD700] shadow-[0_0_10px_#FFD700]" />
+                    </div>
+                 </React.Fragment>
+              );
+           })}
+        </div>
 
           {/* Footer - Hidden on mobile */}
           <div className="hidden lg:block relative z-10 text-white/40 text-xs">

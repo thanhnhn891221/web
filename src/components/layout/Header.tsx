@@ -80,6 +80,22 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
     router.push('/login');
   };
 
+  // Force refresh session from network
+  const refreshSession = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      const data = await res.json();
+      if (data.success && data.data) {
+        const stored = localStorage.getItem('aio-session');
+        const newSession = { ...JSON.parse(stored || '{}'), user: data.data };
+        localStorage.setItem('aio-session', JSON.stringify(newSession));
+        setSession(newSession);
+      }
+    } catch {
+      // Ignore network errors here
+    }
+  };
+
   // Build breadcrumb from pathname
   const getBreadcrumb = () => {
     const parts = pathname.split('/').filter(Boolean);
@@ -112,6 +128,8 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
     if (hour < 18) return 'Chào buổi chiều';
     return 'Chào buổi tối';
   };
+
+  const [showNotifications, setShowNotifications] = useState(false);
 
   return (
     <header
@@ -178,15 +196,37 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
         </button>
 
         {/* Notifications */}
-        <button className="relative p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-          <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--rose)]" />
-        </button>
+        <div className="relative">
+          <button 
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="relative p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+          >
+            <Bell size={18} />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--rose)] border border-white" />
+          </button>
+          
+          {showNotifications && (
+            <div className="absolute right-0 top-full mt-2 w-72 rounded-xl overflow-hidden animate-scale-in bg-white"
+                 style={{ boxShadow: 'var(--shadow-xl)', border: '1px solid var(--border-color)' }}>
+              <div className="p-3 border-b flex justify-between items-center" style={{ borderColor: 'var(--border-color)' }}>
+                <span className="font-semibold text-sm">Thông báo</span>
+                <span className="text-[10px] text-blue-500 cursor-pointer hover:underline">Đánh dấu tất cả đã đọc</span>
+              </div>
+              <div className="p-8 flex flex-col items-center justify-center pointer-events-none opacity-50">
+                <Bell size={24} className="mb-2" />
+                <span className="text-xs">Chưa có thông báo nào.</span>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* User Avatar + Dropdown */}
         <div className="relative" ref={menuRef}>
           <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
+            onClick={() => {
+              if (!showUserMenu) refreshSession(); // refresh data whenever opening menu
+              setShowUserMenu(!showUserMenu);
+            }}
             className="flex items-center gap-3 ml-2 pl-3 border-l border-[var(--border-color)] hover:opacity-80 transition-opacity"
           >
             <div className="hidden sm:block text-right">
@@ -274,7 +314,7 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         title="Xác nhận Đăng xuất"
-        message="Sếp có chắc chắn muốn thoát khỏi hệ thống AIO.MS không? Phiên làm việc sẽ kết thúc ngay lập tức."
+        message="Bạn có chắc chắn muốn thoát khỏi hệ thống AIO.MS không? Phiên làm việc sẽ kết thúc ngay lập tức."
         type="warning"
         onConfirm={executeLogout}
       />

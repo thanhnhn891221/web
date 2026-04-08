@@ -93,7 +93,7 @@ export default function DashboardPage() {
 
                 <div
                   className="w-7 h-7 flex items-center justify-center relative z-10"
-                  style={{ color: '#fff', opacity: mod.isEnabled ? 1 : 0.4, filter: 'drop-shadow(0 3px 3px rgba(0,0,0,0.25))' }}
+                  style={{ color: '#FFD700', opacity: mod.isEnabled ? 1 : 0.4, filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.5)) drop-shadow(0 0 10px rgba(255, 215, 0, 0.4))' }}
                 >
                   {(() => { const Icon = ICON_MAP[mod.icon] || Layers; return <Icon size={28} strokeWidth={2.2} />; })()}
                 </div>

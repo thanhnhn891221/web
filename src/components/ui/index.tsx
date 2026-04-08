@@ -280,7 +280,11 @@ export function Card({ children, className = '', hover = false, padding = 'md', 
 
   return (
     <div
-      className={`card ${paddingMap[padding]} ${hover ? 'cursor-pointer hover:shadow-lg' : ''} ${className}`}
+      className={`card ${paddingMap[padding]} ${hover ? 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all' : ''} ${className}`}
+      style={{
+        background: 'linear-gradient(135deg, var(--rose-50), var(--slate-50))',
+        border: '1px solid var(--rose-100)',
+      }}
       onClick={onClick}
     >
       {children}
@@ -327,7 +331,7 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
           flex flex-col max-h-[85vh] overflow-hidden border-t-[4px]
         `}
         style={{
-          background: 'var(--bg-card)',
+          background: 'linear-gradient(135deg, var(--rose-50) 0%, #ffffff 100%)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           borderTopColor: 'var(--primary-600)',
           borderLeft: '1px solid var(--border-color)',

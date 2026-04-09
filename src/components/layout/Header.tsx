@@ -67,6 +67,8 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const syncRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   // ─── Sync State ─────────────────────────────────────────
   const [syncTasks, setSyncTasks] = useState<SyncTask[]>([
@@ -160,11 +162,18 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
     runBackgroundSync();
   }, [runBackgroundSync]);
 
-  // Close dropdown when clicking outside
+  // Close all dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (menuRef.current && !menuRef.current.contains(target)) {
         setShowUserMenu(false);
+      }
+      if (syncRef.current && !syncRef.current.contains(target)) {
+        setShowSyncPanel(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(target)) {
+        setShowNotifications(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -320,7 +329,7 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
         </button>
 
         {/* Sync Status Icon */}
-        <div className="relative">
+        <div className="relative" ref={syncRef}>
           <button 
             onClick={() => setShowSyncPanel(!showSyncPanel)}
             className="relative p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
@@ -374,7 +383,7 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
         </div>
 
         {/* Notifications */}
-        <div className="relative">
+        <div className="relative" ref={notifRef}>
           <button 
             onClick={() => setShowNotifications(!showNotifications)}
             className="relative p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"

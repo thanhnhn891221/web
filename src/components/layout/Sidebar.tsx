@@ -145,12 +145,12 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {/* Logo */}
         <div className="flex items-center h-16 px-3 border-b border-white/10">
           <div className="flex items-center gap-2.5">
-            {/* Diamond Logo — matches login page design */}
-            <div className="relative flex items-center justify-center w-10 h-10 flex-shrink-0">
-               <div className="absolute inset-0 rounded-xl rotate-45 bg-[var(--primary-600)] shadow-[0_0_15px_var(--primary-600)]" style={{ margin: '2px' }} />
-               <div className="absolute rounded-lg rotate-45 bg-gradient-to-br from-yellow-400 to-yellow-600" style={{ inset: '4px' }} />
-               <div className="absolute rounded-lg rotate-45 bg-[var(--primary-900)] flex items-center justify-center" style={{ inset: '6px' }}>
-                  <span className="-rotate-45 font-black text-[9px] text-white tracking-tighter leading-none">AIO</span>
+            {/* Diamond Logo — exactly as approved shape */}
+            <div className="relative flex items-center justify-center w-10 h-10 flex-shrink-0" style={{ overflow: 'visible' }}>
+               <div className="absolute w-7 h-7 rounded-[4px] bg-[var(--primary-600)] shadow-[0_0_12px_var(--primary-500)]" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(45deg)' }} />
+               <div className="absolute w-[26px] h-[26px] rounded-[3px] bg-gradient-to-br from-yellow-400 to-yellow-600" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(45deg)' }} />
+               <div className="absolute w-[22px] h-[22px] rounded-[2px] bg-[var(--primary-900)] flex items-center justify-center" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(45deg)' }}>
+                  <span className="-rotate-45 font-black text-[9px] text-white tracking-tighter leading-none mt-[1px]">AIO</span>
                </div>
             </div>
             {!collapsed && (

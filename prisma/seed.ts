@@ -12,7 +12,7 @@ async function main() {
   // ━━━ 1. TẠO MODULES (16 phân hệ) ━━━
   console.log('📦 Tạo 16 Modules...');
   const modulesData = [
-    { code: 'CORE', name: 'Admin & Core', nameVi: 'Quản trị Hệ thống', groupCode: 'foundation', icon: 'Shield', color: 'hsl(217, 72%, 46%)', href: '/dashboard', orderIndex: 0 },
+    { code: 'KMS', name: 'Kernel Management System', nameVi: 'Quản trị Lõi', groupCode: 'foundation', icon: 'Shield', color: 'hsl(348, 75%, 46%)', href: '/dashboard/kms', orderIndex: 0 },
     { code: 'IMS', name: 'IT Management', nameVi: 'Quản lý CNTT', groupCode: 'foundation', icon: 'Server', color: 'hsl(250, 60%, 52%)', href: '/dashboard/ims', orderIndex: 1 },
     { code: 'HMS', name: 'Human Resources', nameVi: 'Quản lý Nhân sự', groupCode: 'foundation', icon: 'Users', color: 'hsl(174, 65%, 40%)', href: '/dashboard/hms', orderIndex: 2 },
     { code: 'PMS', name: 'Procurement', nameVi: 'Quản lý Mua hàng', groupCode: 'operations', icon: 'ShoppingCart', color: 'hsl(262, 70%, 55%)', href: '/dashboard/pms', orderIndex: 3 },
@@ -49,8 +49,8 @@ async function main() {
     { code: 'super_admin', name: 'Quản trị tối cao', description: 'Toàn quyền hệ thống, không giới hạn', groupCode: null, isSystem: true },
     { code: 'admin', name: 'Quản trị viên', description: 'Quản lý hệ thống, cấu hình module', groupCode: null, isSystem: true },
     // Foundation group roles
-    { code: 'foundation_exec', name: 'Nền tảng - Thực thi', description: 'Xem và thao tác trên CORE/IMS/HMS', groupCode: 'foundation', isSystem: true },
-    { code: 'foundation_view', name: 'Nền tảng - Xem', description: 'Chỉ xem dữ liệu CORE/IMS/HMS', groupCode: 'foundation', isSystem: true },
+    { code: 'foundation_exec', name: 'Nền tảng - Thực thi', description: 'Xem và thao tác trên KMS/IMS/HMS', groupCode: 'foundation', isSystem: true },
+    { code: 'foundation_view', name: 'Nền tảng - Xem', description: 'Chỉ xem dữ liệu KMS/IMS/HMS', groupCode: 'foundation', isSystem: true },
     // Operations group roles
     { code: 'operations_exec', name: 'Vận hành - Thực thi', description: 'Xem và thao tác trên PMS/WMS/TMS', groupCode: 'operations', isSystem: true },
     { code: 'operations_view', name: 'Vận hành - Xem', description: 'Chỉ xem dữ liệu PMS/WMS/TMS', groupCode: 'operations', isSystem: true },
@@ -77,7 +77,7 @@ async function main() {
   console.log('🛡️  Gán quyền Role → Module...');
 
   const groupModules: Record<string, string[]> = {
-    foundation: ['CORE', 'IMS', 'HMS'],
+    foundation: ['KMS', 'IMS', 'HMS'],
     operations: ['PMS', 'WMS', 'TMS'],
     market: ['FMS', 'QMS', 'RMS', 'MMS', 'SMS', 'OMS', 'DMS'],
     finance: ['AMS', 'CMS', 'BMS'],
@@ -110,20 +110,20 @@ async function main() {
     const execRoleId = roles[`${group}_exec`];
     const viewRoleId = roles[`${group}_view`];
 
-    // Grant Dashboard (CORE) view access to all group roles
+    // Grant Dashboard (KMS) view access to all group roles
     await prisma.roleModulePermission.upsert({
-      where: { roleId_moduleId: { roleId: execRoleId, moduleId: modules['CORE'] } },
+      where: { roleId_moduleId: { roleId: execRoleId, moduleId: modules['KMS'] } },
       update: { canView: true, canCreate: false, canEdit: false, canDelete: false },
-      create: { roleId: execRoleId, moduleId: modules['CORE'], canView: true, canCreate: false, canEdit: false, canDelete: false },
+      create: { roleId: execRoleId, moduleId: modules['KMS'], canView: true, canCreate: false, canEdit: false, canDelete: false },
     });
     await prisma.roleModulePermission.upsert({
-      where: { roleId_moduleId: { roleId: viewRoleId, moduleId: modules['CORE'] } },
+      where: { roleId_moduleId: { roleId: viewRoleId, moduleId: modules['KMS'] } },
       update: { canView: true, canCreate: false, canEdit: false, canDelete: false },
-      create: { roleId: viewRoleId, moduleId: modules['CORE'], canView: true, canCreate: false, canEdit: false, canDelete: false },
+      create: { roleId: viewRoleId, moduleId: modules['KMS'], canView: true, canCreate: false, canEdit: false, canDelete: false },
     });
 
     for (const code of moduleCodes) {
-      if (code === 'CORE') continue; // already handled
+      if (code === 'KMS') continue; // already handled
 
       // exec → full CRUD
       await prisma.roleModulePermission.upsert({
@@ -588,7 +588,7 @@ async function main() {
   }
   console.log(`  ✅ Quality data created\n`);
 
-  console.log('\n🏗️ Tạo Core Settings (CORE)...');
+  console.log('\n🏗️ Tạo Core Settings (KMS)...');
   const settingsData = [
     { key: 'APP_NAME', value: 'AIO.MS ERP', group: 'general', type: 'string' },
     { key: 'COMPANY_NAME', value: 'Google Antigravity Enterprise', group: 'general', type: 'string' },

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
           data: {
             userId: payload.userId,
             action: 'logout',
-            module: 'CORE',
+            module: 'KMS',
             target: `User ${payload.email}`,
             details: 'Đăng xuất',
           },

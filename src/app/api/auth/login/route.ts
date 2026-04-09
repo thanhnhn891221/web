@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         action: 'login',
-        module: 'CORE',
+        module: 'KMS',
         target: `User ${user.email}`,
         details: `Login thành công. Roles: ${roles.map((r: any) => r.code).join(', ')}`,
       },

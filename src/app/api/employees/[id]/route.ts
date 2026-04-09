@@ -33,17 +33,39 @@ export async function PUT(
       }
     });
 
-    // Sync name to User model if there is an account with the same email
-    try {
-       const linkedUser = await prisma.user.findUnique({ where: { email: data.email } });
-       if (linkedUser && linkedUser.name !== data.name) {
-          await prisma.user.update({
-             where: { id: linkedUser.id },
-             data: { name: data.name }
-          });
-       }
-    } catch(e) {
-       console.error("Failed to sync employee name to user account", e);
+    // Sync Employee changes to matched User account (if exists by email)
+    if (data.email) {
+      try {
+         const linkedUser = await prisma.user.findUnique({ where: { email: data.email } });
+         if (linkedUser) {
+            // Update the user's name if it differs
+            if (linkedUser.name !== data.name) {
+              await prisma.user.update({
+                 where: { id: linkedUser.id },
+                 data: { name: data.name }
+              });
+            }
+
+            // Sync UserRoles if sysRole was provided
+            if (data.sysRole) {
+               const role = await prisma.role.findUnique({ where: { code: data.sysRole } });
+               if (role) {
+                  // Ensure this is the role assigned to the user
+                  await prisma.userRole.deleteMany({
+                    where: { userId: linkedUser.id }
+                  });
+                  await prisma.userRole.create({
+                    data: {
+                      userId: linkedUser.id,
+                      roleId: role.id
+                    }
+                  });
+               }
+            }
+         }
+      } catch(e) {
+         console.error("Failed to sync employee data to user account", e);
+      }
     }
 
     return NextResponse.json({ success: true, data: employee });

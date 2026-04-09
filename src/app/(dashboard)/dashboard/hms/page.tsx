@@ -53,6 +53,7 @@ export default function HMSPage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [employees, setEmployees] = useState<EmployeeData[]>([]);
   const [departments, setDepartments] = useState<DepartmentData[]>([]);
+  const [roles, setRoles] = useState<{code: string, name: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // Modals state
@@ -89,14 +90,17 @@ export default function HMSPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [empRes, deptRes] = await Promise.all([
+      const [empRes, deptRes, roleRes] = await Promise.all([
         fetch('/api/employees'),
-        fetch('/api/departments')
+        fetch('/api/departments'),
+        fetch('/api/core/roles')
       ]);
       const empJson = await empRes.json();
       const deptJson = await deptRes.json();
+      const roleJson = await roleRes.json();
       if (empJson.success) setEmployees(empJson.data);
       if (deptJson.success) setDepartments(deptJson.data);
+      if (roleJson.success) setRoles(roleJson.data.roles);
     } catch (error) {
       console.error('Failed to load HMS data', error);
     } finally {
@@ -344,7 +348,7 @@ export default function HMSPage() {
                 <div className="mt-4 space-y-2">
                   <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]"><Building2 size={12}/> {emp.department}</div>
                   <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]"><Mail size={12}/> {emp.email}</div>
-                  <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]"><Shield size={12} className="text-amber-500" /> Vai trò: {emp.sysRole || 'Chưa phân quyền'}</div>
+                  <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]"><Shield size={12} className="text-amber-500" /> Vai trò: {roles.find(r => r.code === emp.sysRole)?.name || emp.sysRole || 'Chưa phân quyền'}</div>
                 </div>
               </Card>
             ))}
@@ -394,7 +398,8 @@ export default function HMSPage() {
           <Input label="Ngày vào làm" type="date" value={empForm.hireDate} onChange={e => setEmpForm({...empForm, hireDate: e.target.value})} icon={Calendar} />
           <Select label="Trạng thái" value={empForm.status} onChange={e => setEmpForm({...empForm, status: e.target.value})} 
             options={Object.keys(STATUS_MAP).map(k => ({ value: k, label: STATUS_MAP[k].label }))} />
-          <Input label="Vai trò (Ghi chú phân quyền)" value={empForm.sysRole} onChange={e => setEmpForm({...empForm, sysRole: e.target.value})} placeholder="Vd: Administrator, Manager..." icon={Shield} />
+          <Select label="Vai trò (Quyền hệ thống)" value={empForm.sysRole} onChange={e => setEmpForm({...empForm, sysRole: e.target.value})} 
+            options={[{value: '', label: '-- Không chọn --'}, ...roles.map(r => ({ value: r.code, label: r.name }))]} />
         </div>
       </Modal>
 

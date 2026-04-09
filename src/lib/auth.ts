@@ -48,11 +48,11 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
 
 /**
  * Map a pathname to a module code
- * /dashboard → CORE
+ * /dashboard → KMS
  * /dashboard/hms → HMS
  */
 export function pathnameToModuleCode(pathname: string): string | null {
-  if (pathname === '/dashboard') return 'CORE';
+  if (pathname === '/dashboard') return 'KMS';
   const match = pathname.match(/^\/dashboard\/([a-z]+)/);
   if (match) return match[1].toUpperCase();
   return null;

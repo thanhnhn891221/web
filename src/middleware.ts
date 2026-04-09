@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/dashboard')) {
       const moduleCode = pathnameToModuleCode(pathname);
 
-      if (moduleCode && moduleCode !== 'CORE') {
+      if (moduleCode && moduleCode !== 'KMS') {
         // Check if user has view permission for this module
         if (!hasModuleAccess(payload.permissions, moduleCode, 'view')) {
           // No permission → redirect to 403 page

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, Sun, Moon, Menu, ChevronRight, LogOut, User, Shield, Compass } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Search, Bell, Sun, Moon, Menu, ChevronRight, LogOut, User, Shield, Compass, RefreshCw, Check, X, Eye, Plus, Edit, Trash2 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { MODULES } from '@/lib/modules';
 
@@ -19,16 +19,41 @@ interface SessionUser {
   avatar?: string;
 }
 
+interface RolePermission {
+  moduleCode: string;
+  moduleName: string;
+  canView: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+}
+
+interface RoleData {
+  id: string;
+  code: string;
+  name: string;
+  permissions?: RolePermission[];
+}
+
+interface EmployeeData {
+  code: string;
+  department: string;
+  position: string;
+  status: string;
+  level: string;
+}
+
 interface SessionData {
   user: SessionUser;
-  roles?: { code: string; name: string }[];
-  employee?: {
-    code: string;
-    department: string;
-    position: string;
-    status: string;
-    level: string;
-  } | null;
+  roles?: RoleData[];
+  employee?: EmployeeData | null;
+}
+
+// ─── Sync Status Types ───────────────────────────────────
+interface SyncTask {
+  key: string;
+  label: string;
+  status: 'pending' | 'loading' | 'done' | 'error';
 }
 
 import { ConfirmModal, Modal, Badge } from '@/components/ui';
@@ -43,26 +68,97 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Load session from localStorage
+  // ─── Sync State ─────────────────────────────────────────
+  const [syncTasks, setSyncTasks] = useState<SyncTask[]>([
+    { key: 'session', label: 'Phiên đăng nhập', status: 'pending' },
+    { key: 'hms', label: 'Nhân sự (HMS)', status: 'pending' },
+    { key: 'kms', label: 'Phân quyền (KMS)', status: 'pending' },
+  ]);
+  const [showSyncPanel, setShowSyncPanel] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const syncInitialized = useRef(false);
+
+  const updateSyncTask = useCallback((key: string, status: SyncTask['status']) => {
+    setSyncTasks(prev => prev.map(t => t.key === key ? { ...t, status } : t));
+  }, []);
+
+  // ─── Background Sync Engine ─────────────────────────────
+  const runBackgroundSync = useCallback(async () => {
+    if (syncInitialized.current) return;
+    syncInitialized.current = true;
+    setIsSyncing(true);
+
+    // 1. Sync Session
+    updateSyncTask('session', 'loading');
+    try {
+      const stored = localStorage.getItem('aio-session');
+      const res = await fetch('/api/auth/me');
+      const data = await res.json();
+      if (data.success && data.data) {
+        const newSession: SessionData = {
+          user: { id: data.data.userId, name: data.data.name, email: data.data.email },
+          roles: data.data.roles,
+          employee: data.data.employee,
+        };
+        // Merge with existing session (keep permissions from original login)
+        const existingSession = stored ? JSON.parse(stored) : {};
+        const merged = { ...existingSession, ...newSession };
+        localStorage.setItem('aio-session', JSON.stringify(merged));
+        setSession(merged);
+        updateSyncTask('session', 'done');
+      } else {
+        updateSyncTask('session', 'error');
+      }
+    } catch {
+      updateSyncTask('session', 'error');
+    }
+
+    // 2. Prefetch HMS data
+    updateSyncTask('hms', 'loading');
+    try {
+      const [empRes, deptRes] = await Promise.all([
+        fetch('/api/employees'),
+        fetch('/api/departments'),
+      ]);
+      const empJson = await empRes.json();
+      const deptJson = await deptRes.json();
+      if (empJson.success) sessionStorage.setItem('hms_employees', JSON.stringify(empJson.data));
+      if (deptJson.success) sessionStorage.setItem('hms_departments', JSON.stringify(deptJson.data));
+      updateSyncTask('hms', 'done');
+    } catch {
+      updateSyncTask('hms', 'error');
+    }
+
+    // 3. Prefetch KMS/Roles data
+    updateSyncTask('kms', 'loading');
+    try {
+      const roleRes = await fetch('/api/core/roles');
+      const roleJson = await roleRes.json();
+      if (roleJson.success) {
+        sessionStorage.setItem('aio_kms_rbac_cache', JSON.stringify(roleJson.data));
+        sessionStorage.setItem('hms_roles', JSON.stringify(roleJson.data.roles));
+      }
+      updateSyncTask('kms', 'done');
+    } catch {
+      updateSyncTask('kms', 'error');
+    }
+
+    setIsSyncing(false);
+  }, [updateSyncTask]);
+
+  // Load session from localStorage immediately, then trigger background sync
   useEffect(() => {
     try {
       const stored = localStorage.getItem('aio-session');
       if (stored) {
         setSession(JSON.parse(stored));
       }
-      
-      // Auto refresh session from API
-      fetch('/api/auth/me').then(res => res.json()).then(data => {
-         if (data.success && data.data && data.data.name !== session?.user?.name) {
-             const newSession = { ...JSON.parse(stored || '{}'), user: data.data };
-             localStorage.setItem('aio-session', JSON.stringify(newSession));
-             setSession(newSession);
-         }
-      }).catch(() => {});
     } catch {
       // ignore
     }
-  }, []);
+    // Kick off background sync
+    runBackgroundSync();
+  }, [runBackgroundSync]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -83,26 +179,17 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
       // Continue with client-side logout even if API fails
     }
     localStorage.removeItem('aio-session');
-    // Clear old cookie format too
+    sessionStorage.clear();
     document.cookie = 'aio-session=; path=/; max-age=0';
     document.cookie = 'aio-token=; path=/; max-age=0';
     router.push('/login');
   };
 
-  // Force refresh session from network
-  const refreshSession = async () => {
-    try {
-      const res = await fetch('/api/auth/me');
-      const data = await res.json();
-      if (data.success && data.data) {
-        const stored = localStorage.getItem('aio-session');
-        const newSession = { ...JSON.parse(stored || '{}'), user: data.data };
-        localStorage.setItem('aio-session', JSON.stringify(newSession));
-        setSession(newSession);
-      }
-    } catch {
-      // Ignore network errors here
-    }
+  // Force re-sync
+  const handleForceSync = () => {
+    syncInitialized.current = false;
+    setSyncTasks(prev => prev.map(t => ({ ...t, status: 'pending' as const })));
+    runBackgroundSync();
   };
 
   // Build breadcrumb from pathname
@@ -128,7 +215,6 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
   const breadcrumb = getBreadcrumb();
   const userName = session?.user?.name || 'User';
   const userInitial = userName.charAt(0).toUpperCase();
-  const primaryRole = session?.roles?.[0]?.name || '';
 
   // Get current time greeting
   const getGreeting = () => {
@@ -140,6 +226,28 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // ─── Compute sync stats ────────────────────────────
+  const syncDoneCount = syncTasks.filter(t => t.status === 'done').length;
+  const syncTotal = syncTasks.length;
+  const allSyncDone = syncDoneCount === syncTotal;
+
+  // ─── Status color helpers ──────────────────────────
+  const statusLabel: Record<string, string> = {
+    active: 'Đang làm việc',
+    probation: 'Thử việc',
+    on_leave: 'Nghỉ phép',
+    resigned: 'Đã nghỉ',
+  };
+
+  const levelLabel: Record<string, string> = {
+    intern: 'Thực tập sinh',
+    junior: 'Nhân viên',
+    senior: 'Chuyên viên',
+    lead: 'Trưởng nhóm',
+    manager: 'Trưởng phòng',
+    director: 'Giám đốc',
+  };
 
   return (
     <header
@@ -211,6 +319,60 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
           {darkMode ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
+        {/* Sync Status Icon */}
+        <div className="relative">
+          <button 
+            onClick={() => setShowSyncPanel(!showSyncPanel)}
+            className="relative p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            title="Trạng thái đồng bộ dữ liệu"
+          >
+            <RefreshCw size={18} className={isSyncing ? 'animate-spin text-[var(--primary-500)]' : (allSyncDone ? 'text-emerald-500' : 'text-[var(--text-muted)]')} />
+            {!allSyncDone && !isSyncing && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 border border-white" />
+            )}
+          </button>
+          
+          {showSyncPanel && (
+            <div className="absolute right-0 top-full mt-2 w-72 rounded-xl overflow-hidden animate-scale-in bg-[var(--primary-950)] text-white"
+                 style={{ boxShadow: '0 10px 25px rgba(0,0,0,0.5)', border: '1px solid var(--primary-800)' }}>
+              <div className="p-3 border-b flex justify-between items-center" style={{ borderColor: 'var(--primary-800)' }}>
+                <span className="font-semibold text-sm">Đồng bộ dữ liệu</span>
+                <button 
+                  onClick={handleForceSync}
+                  className="text-[10px] text-white/70 cursor-pointer hover:text-white transition-colors flex items-center gap-1"
+                >
+                  <RefreshCw size={10} /> Đồng bộ lại
+                </button>
+              </div>
+              <div className="p-2 space-y-1">
+                {syncTasks.map(task => (
+                  <div key={task.key} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/5">
+                    <span className="text-xs font-medium">{task.label}</span>
+                    <span className="flex items-center gap-1.5">
+                      {task.status === 'loading' && <RefreshCw size={12} className="animate-spin text-blue-400" />}
+                      {task.status === 'done' && <Check size={12} className="text-emerald-400" />}
+                      {task.status === 'error' && <X size={12} className="text-rose-400" />}
+                      {task.status === 'pending' && <div className="w-3 h-3 rounded-full bg-white/20" />}
+                      <span className={`text-[10px] ${
+                        task.status === 'loading' ? 'text-blue-400' :
+                        task.status === 'done' ? 'text-emerald-400' :
+                        task.status === 'error' ? 'text-rose-400' : 'text-white/40'
+                      }`}>
+                        {task.status === 'loading' ? 'Đang tải...' :
+                         task.status === 'done' ? 'Hoàn tất' :
+                         task.status === 'error' ? 'Lỗi' : 'Chờ'}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="p-2 border-t text-center" style={{ borderColor: 'var(--primary-800)' }}>
+                <span className="text-[10px] text-white/40">{syncDoneCount}/{syncTotal} hoàn tất</span>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Notifications */}
         <div className="relative">
           <button 
@@ -240,7 +402,6 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => {
-              if (!showUserMenu) refreshSession(); // refresh data whenever opening menu
               setShowUserMenu(!showUserMenu);
             }}
             className="flex items-center gap-3 ml-2 pl-3 border-l border-[var(--border-color)] hover:opacity-80 transition-opacity"
@@ -272,13 +433,13 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
                 <p className="text-xs mt-0.5 text-white/60">
                   {session?.user?.email || ''}
                 </p>
-                {primaryRole && (
+                {session?.roles && session.roles.length > 0 && (
                   <div className="flex items-center gap-1.5 mt-2">
                     <Shield size={12} className="text-[var(--primary-400)]" />
                     <span className="text-xs font-medium text-[var(--primary-400)]">
-                      {primaryRole}
+                      {session.roles[0].name}
                     </span>
-                    {session?.roles && session.roles.length > 1 && (
+                    {session.roles.length > 1 && (
                       <span
                         className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--primary-800)] text-[var(--primary-100)]"
                       >
@@ -371,60 +532,122 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
             {userInitial}
           </div>
           <h2 className="text-xl font-bold">{userName}</h2>
-          <p className="text-[var(--text-muted)] text-sm">{session?.user?.email}</p>
+          <p className="text-white/60 text-sm">{session?.user?.email}</p>
           
           {session?.employee ? (
-            <div className="w-full mt-6 space-y-3 bg-[var(--slate-50)] dark:bg-[var(--primary-900)]/30 p-4 rounded-xl border border-[var(--border-color)]">
+            <div className="w-full mt-6 space-y-3 bg-white/5 p-4 rounded-xl border border-white/10">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-[var(--text-secondary)]">Mã NV:</span>
-                <span className="font-semibold">{session.employee.code}</span>
+                <span className="text-white/60">Mã NV:</span>
+                <span className="font-semibold text-white">{session.employee.code}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-[var(--text-secondary)]">Phòng ban:</span>
-                <span className="font-semibold">{session.employee.department}</span>
+                <span className="text-white/60">Phòng ban:</span>
+                <span className="font-semibold text-white">{session.employee.department}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-[var(--text-secondary)]">Vị trí chức danh:</span>
-                <span className="font-semibold">{session.employee.position}</span>
+                <span className="text-white/60">Vị trí chức danh:</span>
+                <span className="font-semibold text-white">{session.employee.position}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-[var(--text-secondary)]">Cấp bậc:</span>
-                <Badge variant="default">{session.employee.level.toUpperCase()}</Badge>
+                <span className="text-white/60">Trạng thái:</span>
+                <Badge variant="success">{statusLabel[session.employee.status] || session.employee.status}</Badge>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-white/60">Cấp bậc:</span>
+                <Badge variant="default">{levelLabel[session.employee.level] || session.employee.level}</Badge>
               </div>
             </div>
           ) : (
-             <div className="w-full mt-6 p-4 rounded-xl border border-dashed border-rose-300 bg-rose-50 text-rose-600 text-sm text-center">
-               Bạn chưa được cấp mã nhân viên (HMS). Không thể truy xuất thông tin nhân sự.
+             <div className="w-full mt-6 p-4 rounded-xl border border-white/20 bg-white/5 text-white/70 text-sm text-center">
+               <p className="font-medium mb-1">⚙️ Tài khoản hệ thống</p>
+               <p className="text-xs text-white/50">Tài khoản này chưa liên kết với hồ sơ nhân sự trong phân hệ HMS. Vui lòng liên hệ quản trị viên nếu cần bổ sung.</p>
              </div>
+          )}
+
+          {/* Show role summary in profile too */}
+          {session?.roles && session.roles.length > 0 && (
+            <div className="w-full mt-4">
+              <p className="text-xs text-white/40 uppercase tracking-wider mb-2 font-bold">Vai trò hệ thống</p>
+              <div className="flex flex-wrap gap-2">
+                {session.roles.map(r => (
+                  <span key={r.code} className="text-xs px-3 py-1.5 rounded-full bg-[var(--primary-600)] text-white font-medium">
+                    {r.name}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </Modal>
 
-      {/* Roles Modal */}
+      {/* Roles & Permissions Modal */}
       <Modal 
         isOpen={isRoleModalOpen} 
         onClose={() => setIsRoleModalOpen(false)} 
         title="Thông tin phân quyền cá nhân"
-        size="md"
+        size="lg"
       >
-        <div className="p-2 space-y-4">
+        <div className="space-y-4">
            {session?.roles && session.roles.length > 0 ? (
-             <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-[var(--text-secondary)] uppercase tracking-wider mb-3">Tất cả Vai trò hệ thống được giao</h3>
-                {session.roles.map(r => (
-                  <div key={r.code} className="p-3 border border-[var(--border-color)] rounded-lg flex items-center gap-3">
-                    <Shield size={20} className="text-[var(--primary-500)]" />
-                    <div>
-                      <h4 className="font-bold text-sm">{r.name}</h4>
-                      <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{r.code}</p>
+             <div className="space-y-6">
+                {session.roles.map(role => (
+                  <div key={role.code} className="border border-white/10 rounded-xl overflow-hidden">
+                    {/* Role header */}
+                    <div className="flex items-center gap-3 p-4 bg-white/5">
+                      <Shield size={20} className="text-[var(--primary-400)]" />
+                      <div>
+                        <h4 className="font-bold text-sm text-white">{role.name}</h4>
+                        <p className="text-[10px] text-white/50 uppercase tracking-wider">{role.code}</p>
+                      </div>
                     </div>
+                    
+                    {/* Permission matrix */}
+                    {role.permissions && role.permissions.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead className="bg-white/5 text-white/50 uppercase tracking-wider">
+                            <tr>
+                              <th className="px-4 py-2 text-left font-bold">Phân hệ</th>
+                              <th className="px-3 py-2 text-center font-bold"><Eye size={12} className="inline" /> Xem</th>
+                              <th className="px-3 py-2 text-center font-bold"><Plus size={12} className="inline" /> Tạo</th>
+                              <th className="px-3 py-2 text-center font-bold"><Edit size={12} className="inline" /> Sửa</th>
+                              <th className="px-3 py-2 text-center font-bold"><Trash2 size={12} className="inline" /> Xóa</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/5">
+                            {role.permissions.map(perm => (
+                              <tr key={perm.moduleCode} className="hover:bg-white/5">
+                                <td className="px-4 py-2">
+                                  <span className="font-semibold text-white">{perm.moduleCode}</span>
+                                  <span className="text-white/40 ml-1.5">{perm.moduleName}</span>
+                                </td>
+                                <td className="px-3 py-2 text-center">
+                                  {perm.canView ? <Check size={14} className="inline text-emerald-400" /> : <X size={14} className="inline text-white/20" />}
+                                </td>
+                                <td className="px-3 py-2 text-center">
+                                  {perm.canCreate ? <Check size={14} className="inline text-blue-400" /> : <X size={14} className="inline text-white/20" />}
+                                </td>
+                                <td className="px-3 py-2 text-center">
+                                  {perm.canEdit ? <Check size={14} className="inline text-amber-400" /> : <X size={14} className="inline text-white/20" />}
+                                </td>
+                                <td className="px-3 py-2 text-center">
+                                  {perm.canDelete ? <Check size={14} className="inline text-rose-400" /> : <X size={14} className="inline text-white/20" />}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-white/40 text-xs">Chưa có quyền nào được cấu hình cho vai trò này.</div>
+                    )}
                   </div>
                 ))}
              </div>
            ) : (
-             <p className="text-[var(--text-muted)] text-sm">Chưa được gán vào nhóm phân quyền nào.</p>
+             <p className="text-white/50 text-sm">Chưa được gán vào nhóm phân quyền nào.</p>
            )}
-           <p className="text-xs text-[var(--text-muted)] mt-4 p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg text-amber-700 dark:text-amber-500">
+           <p className="text-xs text-amber-500/80 mt-4 p-3 bg-amber-900/10 border border-amber-900/30 rounded-lg">
              Lưu ý: Nếu một vai trò mới được cấp vừa xong, bạn có thể cần phải <b>Đăng xuất và đăng nhập lại</b> để token đồng bộ quyền mới vào Client Middleware.
            </p>
         </div>

@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Settings, Save, Shield, Globe, Database,
+  Settings, Save, Shield, Globe, Database, Palette,
   Lock, Key, Mail, Cpu, HardDrive, RefreshCw,
   Clock, Activity, Plus, Trash2, Users, Network,
   FileText, Search, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Button, Card, Modal, Input, Select, StatCard, ConfirmModal } from '@/components/ui';
+import { loadThemeConfig, saveThemeConfig, applyTheme, DEFAULT_THEME, type ThemeConfig } from '@/lib/theme';
 
 export default function KMSPage() {
   const [activeTab, setActiveTab] = useState<'rbac' | 'logs' | 'settings'>('rbac');
@@ -41,7 +42,11 @@ export default function KMSPage() {
     onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', type: 'danger', onConfirm: () => {} });
 
+  // Theme State
+  const [themeConfig, setThemeConfig] = useState<ThemeConfig>(DEFAULT_THEME);
+
   useEffect(() => {
+    setThemeConfig(loadThemeConfig());
     fetchSettings();
     fetchRBAC();
     fetchLogs(1);
@@ -429,6 +434,45 @@ export default function KMSPage() {
                ))}
             </div>
             <div className="space-y-6">
+              {/* Theme Configuration */}
+              <Card padding="lg" className="border-2 border-dashed border-[var(--primary-300)]">
+                 <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><Palette size={16} className="text-[var(--primary-500)]"/> Bảng màu Giao diện</h3>
+                 <div className="space-y-4">
+                    <div>
+                       <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Màu Chủ đạo (Primary)</label>
+                       <div className="flex items-center gap-2">
+                          <input type="color" value={themeConfig.primaryColor} onChange={e => setThemeConfig(prev => ({...prev, primaryColor: e.target.value}))} className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer" />
+                          <span className="text-xs font-mono text-slate-500">{themeConfig.primaryColor}</span>
+                       </div>
+                    </div>
+                    <div>
+                       <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Màu Điểm nhấn (Accent)</label>
+                       <div className="flex items-center gap-2">
+                          <input type="color" value={themeConfig.accentColor} onChange={e => setThemeConfig(prev => ({...prev, accentColor: e.target.value}))} className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer" />
+                          <span className="text-xs font-mono text-slate-500">{themeConfig.accentColor}</span>
+                       </div>
+                    </div>
+                    <div>
+                       <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Màu nền Sáng (Light BG)</label>
+                       <div className="flex items-center gap-2">
+                          <input type="color" value={themeConfig.bgLightColor} onChange={e => setThemeConfig(prev => ({...prev, bgLightColor: e.target.value}))} className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer" />
+                          <span className="text-xs font-mono text-slate-500">{themeConfig.bgLightColor}</span>
+                       </div>
+                    </div>
+                    <div>
+                       <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Màu nền Tối (Dark BG)</label>
+                       <div className="flex items-center gap-2">
+                          <input type="color" value={themeConfig.bgDarkColor} onChange={e => setThemeConfig(prev => ({...prev, bgDarkColor: e.target.value}))} className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer" />
+                          <span className="text-xs font-mono text-slate-500">{themeConfig.bgDarkColor}</span>
+                       </div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                       <Button size="sm" icon={Save} onClick={() => { saveThemeConfig(themeConfig); applyTheme(themeConfig); }}>Áp dụng</Button>
+                       <Button size="sm" variant="ghost" onClick={() => { const d = DEFAULT_THEME; setThemeConfig(d); saveThemeConfig(d); applyTheme(d); }}>Mặc định</Button>
+                    </div>
+                 </div>
+              </Card>
+
               <Card padding="lg" className="bg-slate-50/50">
                  <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><Lock size={16} className="text-slate-400"/> Bảo mật & Quyền hạn</h3>
                  <div className="space-y-2">

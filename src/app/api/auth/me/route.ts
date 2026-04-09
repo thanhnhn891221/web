@@ -23,12 +23,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Query database for fresh user info
+    // Query database for fresh user info with full role+permission detail
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       include: {
         userRoles: {
-          include: { role: true }
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    module: true
+                  }
+                }
+              }
+            }
+          }
         }
       }
     });
@@ -45,6 +55,21 @@ export async function GET(request: NextRequest) {
       include: { department: true }
     });
 
+    // Build roles array with their detailed permissions
+    const roles = user.userRoles.map((ur: any) => ({
+      id: ur.role.id,
+      code: ur.role.code,
+      name: ur.role.name,
+      permissions: ur.role.permissions.map((p: any) => ({
+        moduleCode: p.module.code,
+        moduleName: p.module.name,
+        canView: p.canView,
+        canCreate: p.canCreate,
+        canEdit: p.canEdit,
+        canDelete: p.canDelete,
+      }))
+    }));
+
     return NextResponse.json({
       success: true,
       data: {
@@ -58,12 +83,8 @@ export async function GET(request: NextRequest) {
            status: employee.status,
            level: employee.level
         } : null,
-        roles: user.userRoles.map((r: any) => ({
-           id: r.role.id,
-           code: r.role.code,
-           name: r.role.name
-        })),
-        permissions: payload.permissions, // Permissions can remain from token for this purpose, or refetch
+        roles,
+        permissions: payload.permissions,
       },
     });
   } catch {

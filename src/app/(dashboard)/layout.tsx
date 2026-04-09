@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
+import { initTheme } from '@/lib/theme';
 
 export default function DashboardLayout({
   children,
@@ -13,6 +14,9 @@ export default function DashboardLayout({
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
+    // Initialize custom theme colors from localStorage
+    initTheme();
+
     // Check saved preference or system preference
     const saved = localStorage.getItem('aio-theme');
     if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -47,12 +51,13 @@ export default function DashboardLayout({
           sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-[260px]'
         }`}
       >
-        {/* Ambient Red Gradient — Corporate Identity Background */}
+        {/* Ambient Gradient — Uses CSS variables for dynamic theming */}
         <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'linear-gradient(180deg, hsla(348, 75%, 46%, 0.08) 0%, hsla(348, 75%, 46%, 0.03) 15%, transparent 35%)',
+          background: 'linear-gradient(180deg, var(--primary-500, hsla(348,75%,46%,1)) 0%, transparent 35%)',
+          opacity: 0.06,
         }} />
         <div className="absolute top-0 right-0 w-[600px] h-[600px] pointer-events-none opacity-[0.04] blur-3xl" style={{
-          background: 'radial-gradient(circle, hsl(38, 90%, 50%), transparent 70%)',
+          background: 'radial-gradient(circle, var(--accent-500, hsl(38,90%,50%)), transparent 70%)',
         }} />
 
         <div className="p-6 animate-fade-in relative z-0">

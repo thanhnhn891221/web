@@ -84,11 +84,22 @@ export default function HMSPage() {
   const [deptForm, setDeptForm] = useState({ name: '', code: '', color: '#3B82F6' });
 
   useEffect(() => {
+    // Quick load from local cache if exists
+    try {
+      const cachedEmp = sessionStorage.getItem('hms_employees');
+      const cachedDept = sessionStorage.getItem('hms_departments');
+      const cachedRoles = sessionStorage.getItem('hms_roles');
+      if (cachedEmp) setEmployees(JSON.parse(cachedEmp));
+      if (cachedDept) setDepartments(JSON.parse(cachedDept));
+      if (cachedRoles) setRoles(JSON.parse(cachedRoles));
+    } catch { /* ignore cache errors */ }
+
     fetchData();
   }, []);
 
   const fetchData = async () => {
-    setIsLoading(true);
+    // Only show loading visually if we have no cached data yet
+    if (employees.length === 0) setIsLoading(true);
     try {
       const [empRes, deptRes, roleRes] = await Promise.all([
         fetch('/api/employees'),
@@ -98,9 +109,19 @@ export default function HMSPage() {
       const empJson = await empRes.json();
       const deptJson = await deptRes.json();
       const roleJson = await roleRes.json();
-      if (empJson.success) setEmployees(empJson.data);
-      if (deptJson.success) setDepartments(deptJson.data);
-      if (roleJson.success) setRoles(roleJson.data.roles);
+      
+      if (empJson.success) {
+         setEmployees(empJson.data);
+         sessionStorage.setItem('hms_employees', JSON.stringify(empJson.data));
+      }
+      if (deptJson.success) {
+         setDepartments(deptJson.data);
+         sessionStorage.setItem('hms_departments', JSON.stringify(deptJson.data));
+      }
+      if (roleJson.success) {
+         setRoles(roleJson.data.roles);
+         sessionStorage.setItem('hms_roles', JSON.stringify(roleJson.data.roles));
+      }
     } catch (error) {
       console.error('Failed to load HMS data', error);
     } finally {

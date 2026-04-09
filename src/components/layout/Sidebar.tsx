@@ -143,20 +143,23 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         style={{ background: 'var(--primary-800)' }}
       >
         {/* Logo */}
-        <div className="flex items-center h-16 px-4 border-b border-white/10">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-white"
-            >
-              <span className="font-bold text-sm" style={{ color: 'var(--primary-700)' }}>A</span>
+        <div className="flex items-center h-16 px-3 border-b border-white/10">
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            {/* Diamond Logo */}
+            <div className="relative flex items-center justify-center w-8 h-8 flex-shrink-0 ml-1">
+               <div className="absolute inset-0 rounded-md rotate-45 bg-[var(--primary-600)] shadow-[0_0_10px_var(--primary-600)]" />
+               <div className="absolute inset-0.5 rounded-md rotate-45 bg-gradient-to-br from-yellow-400 to-yellow-600" />
+               <div className="absolute inset-[3px] rounded-sm rotate-45 bg-[var(--primary-900)] flex items-center justify-center">
+                  <span className="-rotate-45 font-black text-[9px] text-white tracking-tighter">AIO</span>
+               </div>
             </div>
             {!collapsed && (
-              <div className="animate-fade-in">
-                <h1 className="text-white font-bold text-lg tracking-tight leading-none">
+              <div className="animate-fade-in pl-1">
+                <h1 className="text-white font-bold text-[17px] tracking-tight leading-none">
                   AIO.MS
                 </h1>
-                <p className="text-white/50 text-[10px] tracking-widest uppercase">
-                  Enterprise Suite
+                <p className="text-[#FFD700] text-[9px] tracking-[0.15em] uppercase mt-0.5 font-semibold">
+                  Ecosystem
                 </p>
               </div>
             )}

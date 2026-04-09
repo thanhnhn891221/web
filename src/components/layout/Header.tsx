@@ -22,9 +22,16 @@ interface SessionUser {
 interface SessionData {
   user: SessionUser;
   roles?: { code: string; name: string }[];
+  employee?: {
+    code: string;
+    department: string;
+    position: string;
+    status: string;
+    level: string;
+  } | null;
 }
 
-import { ConfirmModal } from '@/components/ui';
+import { ConfirmModal, Modal, Badge } from '@/components/ui';
 
 export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThemeToggle }: HeaderProps) {
   const pathname = usePathname();
@@ -32,6 +39,8 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
   const [session, setSession] = useState<SessionData | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Load session from localStorage
@@ -284,17 +293,17 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
               <div className="p-2">
                 <button
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-[var(--primary-800)] transition-colors text-left"
-                  onClick={() => { setShowUserMenu(false); router.push('/dashboard/kms?tab=settings'); }}
+                  onClick={() => { setShowUserMenu(false); setIsProfileModalOpen(true); }}
                 >
                   <User size={16} className="text-white/60" />
                   <span>Hồ sơ cá nhân</span>
                 </button>
                 <button
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-[var(--primary-800)] transition-colors text-left"
-                  onClick={() => { setShowUserMenu(false); router.push('/dashboard/kms'); }}
+                  onClick={() => { setShowUserMenu(false); setIsRoleModalOpen(true); }}
                 >
                   <Shield size={16} className="text-white/60" />
-                  <span>Quản lý vai trò</span>
+                  <span>Quyền của tôi</span>
                 </button>
               </div>
 
@@ -348,6 +357,78 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
         type="warning"
         onConfirm={executeLogout}
       />
+
+      {/* Profile Modal */}
+      <Modal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)} 
+        title="Hồ sơ nhân viên"
+        size="md"
+      >
+        <div className="flex flex-col items-center p-4">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-3xl mb-4"
+               style={{ background: 'linear-gradient(135deg, var(--primary-500), var(--primary-400))' }}>
+            {userInitial}
+          </div>
+          <h2 className="text-xl font-bold">{userName}</h2>
+          <p className="text-[var(--text-muted)] text-sm">{session?.user?.email}</p>
+          
+          {session?.employee ? (
+            <div className="w-full mt-6 space-y-3 bg-[var(--slate-50)] dark:bg-[var(--primary-900)]/30 p-4 rounded-xl border border-[var(--border-color)]">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-[var(--text-secondary)]">Mã NV:</span>
+                <span className="font-semibold">{session.employee.code}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-[var(--text-secondary)]">Phòng ban:</span>
+                <span className="font-semibold">{session.employee.department}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-[var(--text-secondary)]">Vị trí chức danh:</span>
+                <span className="font-semibold">{session.employee.position}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-[var(--text-secondary)]">Cấp bậc:</span>
+                <Badge variant="default">{session.employee.level.toUpperCase()}</Badge>
+              </div>
+            </div>
+          ) : (
+             <div className="w-full mt-6 p-4 rounded-xl border border-dashed border-rose-300 bg-rose-50 text-rose-600 text-sm text-center">
+               Bạn chưa được cấp mã nhân viên (HMS). Không thể truy xuất thông tin nhân sự.
+             </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Roles Modal */}
+      <Modal 
+        isOpen={isRoleModalOpen} 
+        onClose={() => setIsRoleModalOpen(false)} 
+        title="Thông tin phân quyền cá nhân"
+        size="md"
+      >
+        <div className="p-2 space-y-4">
+           {session?.roles && session.roles.length > 0 ? (
+             <div className="space-y-2">
+                <h3 className="font-semibold text-sm text-[var(--text-secondary)] uppercase tracking-wider mb-3">Tất cả Vai trò hệ thống được giao</h3>
+                {session.roles.map(r => (
+                  <div key={r.code} className="p-3 border border-[var(--border-color)] rounded-lg flex items-center gap-3">
+                    <Shield size={20} className="text-[var(--primary-500)]" />
+                    <div>
+                      <h4 className="font-bold text-sm">{r.name}</h4>
+                      <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{r.code}</p>
+                    </div>
+                  </div>
+                ))}
+             </div>
+           ) : (
+             <p className="text-[var(--text-muted)] text-sm">Chưa được gán vào nhóm phân quyền nào.</p>
+           )}
+           <p className="text-xs text-[var(--text-muted)] mt-4 p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg text-amber-700 dark:text-amber-500">
+             Lưu ý: Nếu một vai trò mới được cấp vừa xong, bạn có thể cần phải <b>Đăng xuất và đăng nhập lại</b> để token đồng bộ quyền mới vào Client Middleware.
+           </p>
+        </div>
+      </Modal>
     </header>
   );
 }

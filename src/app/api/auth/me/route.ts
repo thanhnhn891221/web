@@ -37,12 +37,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Không tìm thấy người dùng' }, { status: 404 });
     }
 
+    // Connect to employee
+    const employee = await prisma.employee.findFirst({
+      where: { email: user.email },
+      include: { department: true }
+    });
+
     return NextResponse.json({
       success: true,
       data: {
         userId: user.id,
         email: user.email,
         name: user.name,
+        employee: employee ? {
+           code: employee.employeeCode,
+           department: employee.department?.name,
+           position: employee.position,
+           status: employee.status,
+           level: employee.level
+        } : null,
         roles: user.userRoles.map((r: any) => ({
            id: r.role.id,
            code: r.role.code,

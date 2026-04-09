@@ -60,12 +60,32 @@ export default function KMSPage() {
 
   const fetchRBAC = async () => {
     setIsLoadingRBAC(true);
+    
+    // Check cache first
+    const cachedData = sessionStorage.getItem('aio_kms_rbac_cache');
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        setRolesData(parsed.roles);
+        setAllModules(parsed.allModules);
+        if (parsed.roles.length > 0 && !selectedRoleId) {
+           handleSelectRole(parsed.roles[0], parsed.allModules);
+        }
+        setIsLoadingRBAC(false); // UI can render immediately
+      } catch (e) {
+        // Cache invalid
+      }
+    }
+
     try {
       const res = await fetch('/api/core/roles');
       const json = await res.json();
       if (json.success) {
+        // Update state and cache
         setRolesData(json.data.roles);
         setAllModules(json.data.allModules);
+        sessionStorage.setItem('aio_kms_rbac_cache', JSON.stringify(json.data));
+        
         if (json.data.roles.length > 0 && !selectedRoleId) {
            handleSelectRole(json.data.roles[0], json.data.allModules);
         } else if (selectedRoleId) {
@@ -121,6 +141,7 @@ export default function KMSPage() {
        });
        if (res.ok) {
           alert('Đã lưu thành công phân quyền!');
+          sessionStorage.removeItem('aio_kms_rbac_cache');
           fetchRBAC();
        } else {
           alert('Lỗi lưu phân quyền. Vui lòng thử lại.');
@@ -141,6 +162,7 @@ export default function KMSPage() {
        if (res.ok) {
           setIsAddRoleModalOpen(false);
           setNewRoleForm({ code: '', name: '' });
+          sessionStorage.removeItem('aio_kms_rbac_cache');
           fetchRBAC();
        } else {
           const js = await res.json();

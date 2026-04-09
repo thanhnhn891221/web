@@ -288,6 +288,8 @@ export function Card({ children, className = '', hover = false, padding = 'md', 
   );
 }
 
+import { createPortal } from 'react-dom';
+
 // ============================================
 // Modal Component
 // ============================================
@@ -310,13 +312,19 @@ const modalSizes = {
 };
 
 export function Modal({ isOpen, onClose, title, description, children, size = 'md', footer }: ModalProps) {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = React.useState(false);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-20 pb-10">
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
+
+  const content = (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
       />
 
@@ -348,7 +356,7 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6" style={{ WebkitOverflowScrolling: 'touch' }}>
           {children}
         </div>
 
@@ -364,6 +372,8 @@ export function Modal({ isOpen, onClose, title, description, children, size = 'm
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 }
 
 // ============================================

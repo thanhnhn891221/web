@@ -4,6 +4,8 @@ import React from 'react';
 import { AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { Button } from './index';
 
+import { createPortal } from 'react-dom';
+
 interface ConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,7 +29,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   cancelText = 'Hủy',
   isLoading = false
 }) => {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const colors = {
     danger: { bg: 'bg-red-50', text: 'text-red-600', icon: AlertTriangle, btn: 'bg-red-600 hover:bg-red-700' },
@@ -39,7 +47,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const config = colors[type];
   const Icon = config.icon;
 
-  return (
+  const content = (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px] animate-fade-in">
       <div className="bg-[var(--primary-900)] text-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-up border border-[var(--primary-700)]">
         <div className="p-6">
@@ -78,4 +86,6 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 };

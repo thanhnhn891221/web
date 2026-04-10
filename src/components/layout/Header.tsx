@@ -84,69 +84,91 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
     setSyncTasks(prev => prev.map(t => t.key === key ? { ...t, status } : t));
   }, []);
 
-  // ─── Background Sync Engine ─────────────────────────────
-  const runBackgroundSync = useCallback(async () => {
-    if (syncInitialized.current) return;
-    syncInitialized.current = true;
+  // ─── Background Sync Engine (Non-intrusive) ─────────────
+  const runBackgroundSync = useCallback(async (moduleCode?: string) => {
+    // If we're already syncing and no specific module is requested, skip
+    if (!moduleCode && isSyncing) return;
+    
     setIsSyncing(true);
 
     // 1. Sync Session
-    updateSyncTask('session', 'loading');
-    try {
-      const stored = localStorage.getItem('aio-session');
-      const res = await fetch('/api/auth/me');
-      const data = await res.json();
-      if (data.success && data.data) {
-        const newSession: SessionData = {
-          user: { id: data.data.userId, name: data.data.name, email: data.data.email },
-          roles: data.data.roles,
-          employee: data.data.employee,
-        };
-        // Merge with existing session (keep permissions from original login)
-        const existingSession = stored ? JSON.parse(stored) : {};
-        const merged = { ...existingSession, ...newSession };
-        localStorage.setItem('aio-session', JSON.stringify(merged));
-        setSession(merged);
-        updateSyncTask('session', 'done');
-      } else {
+    if (!moduleCode || moduleCode === 'session') {
+      updateSyncTask('session', 'loading');
+      try {
+        const stored = localStorage.getItem('aio-session');
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.success && data.data) {
+          const newSession: SessionData = {
+            user: { id: data.data.userId, name: data.data.name, email: data.data.email },
+            roles: data.data.roles,
+            employee: data.data.employee,
+          };
+          const existingSession = stored ? JSON.parse(stored) : {};
+          const merged = { ...existingSession, ...newSession };
+          localStorage.setItem('aio-session', JSON.stringify(merged));
+          setSession(merged);
+          updateSyncTask('session', 'done');
+        } else {
+          updateSyncTask('session', 'error');
+        }
+      } catch {
         updateSyncTask('session', 'error');
       }
-    } catch {
-      updateSyncTask('session', 'error');
     }
 
     // 2. Prefetch HMS data
-    updateSyncTask('hms', 'loading');
-    try {
-      const [empRes, deptRes] = await Promise.all([
-        fetch('/api/employees'),
-        fetch('/api/departments'),
-      ]);
-      const empJson = await empRes.json();
-      const deptJson = await deptRes.json();
-      if (empJson.success) sessionStorage.setItem('hms_employees', JSON.stringify(empJson.data));
-      if (deptJson.success) sessionStorage.setItem('hms_departments', JSON.stringify(deptJson.data));
-      updateSyncTask('hms', 'done');
-    } catch {
-      updateSyncTask('hms', 'error');
+    if (!moduleCode || moduleCode === 'hms') {
+      updateSyncTask('hms', 'loading');
+      try {
+        const [empRes, deptRes] = await Promise.all([
+          fetch('/api/employees'),
+          fetch('/api/departments'),
+        ]);
+        const empJson = await empRes.json();
+        const deptJson = await deptRes.json();
+        
+        // Silent Refresh: Only update if successful, don't clear beforehand
+        if (empJson.success) sessionStorage.setItem('hms_employees', JSON.stringify(empJson.data));
+        if (deptJson.success) sessionStorage.setItem('hms_departments', JSON.stringify(deptJson.data));
+        
+        // Post-sync update event for active pages
+        window.dispatchEvent(new CustomEvent('aio-sync-complete', { detail: { module: 'hms' } }));
+        updateSyncTask('hms', 'done');
+      } catch {
+        updateSyncTask('hms', 'error');
+      }
     }
 
     // 3. Prefetch KMS/Roles data
-    updateSyncTask('kms', 'loading');
-    try {
-      const roleRes = await fetch('/api/core/roles');
-      const roleJson = await roleRes.json();
-      if (roleJson.success) {
-        sessionStorage.setItem('aio_kms_rbac_cache', JSON.stringify(roleJson.data));
-        sessionStorage.setItem('hms_roles', JSON.stringify(roleJson.data.roles));
+    if (!moduleCode || moduleCode === 'kms') {
+      updateSyncTask('kms', 'loading');
+      try {
+        const roleRes = await fetch('/api/core/roles');
+        const roleJson = await roleRes.json();
+        if (roleJson.success) {
+          sessionStorage.setItem('aio_kms_rbac_cache', JSON.stringify(roleJson.data));
+          sessionStorage.setItem('hms_roles', JSON.stringify(roleJson.data.roles));
+          window.dispatchEvent(new CustomEvent('aio-sync-complete', { detail: { module: 'kms' } }));
+        }
+        updateSyncTask('kms', 'done');
+      } catch {
+        updateSyncTask('kms', 'error');
       }
-      updateSyncTask('kms', 'done');
-    } catch {
-      updateSyncTask('kms', 'error');
     }
 
     setIsSyncing(false);
-  }, [updateSyncTask]);
+  }, [updateSyncTask, isSyncing]);
+
+  // Handle global sync triggers from other components
+  useEffect(() => {
+    const handleGlobalSync = (e: any) => {
+      const targetModule = e.detail?.module;
+      runBackgroundSync(targetModule);
+    };
+    window.addEventListener('aio-sync-request', handleGlobalSync);
+    return () => window.removeEventListener('aio-sync-request', handleGlobalSync);
+  }, [runBackgroundSync]);
 
   // Load session from localStorage immediately, then trigger background sync
   useEffect(() => {
@@ -355,22 +377,26 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
               </div>
               <div className="p-2 space-y-1">
                 {syncTasks.map(task => (
-                  <div key={task.key} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/5">
-                    <span className="text-xs font-medium">{task.label}</span>
-                    <span className="flex items-center gap-1.5">
+                  <div key={task.key} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/5 group">
+                    <div className="flex items-center gap-2">
+                       <span className="text-xs font-medium">{task.label}</span>
+                    </div>
+                    <span className="flex items-center gap-1.5 font-mono text-[10px]">
                       {task.status === 'loading' && <RefreshCw size={12} className="animate-spin text-blue-400" />}
-                      {task.status === 'done' && <Check size={12} className="text-emerald-400" />}
-                      {task.status === 'error' && <X size={12} className="text-rose-400" />}
-                      {task.status === 'pending' && <div className="w-3 h-3 rounded-full bg-white/20" />}
-                      <span className={`text-[10px] ${
+                      <span className={`cursor-pointer hover:underline ${
                         task.status === 'loading' ? 'text-blue-400' :
                         task.status === 'done' ? 'text-emerald-400' :
                         task.status === 'error' ? 'text-rose-400' : 'text-white/40'
-                      }`}>
-                        {task.status === 'loading' ? 'Đang tải...' :
-                         task.status === 'done' ? 'Hoàn tất' :
-                         task.status === 'error' ? 'Lỗi' : 'Chờ'}
+                      }`} onClick={() => runBackgroundSync(task.key)}>
+                        {task.status === 'loading' ? 'Sync...' :
+                         task.status === 'done' ? 'Done' :
+                         task.status === 'error' ? 'Retry' : 'Pending'}
                       </span>
+                      {task.status !== 'loading' && (
+                         <button onClick={() => runBackgroundSync(task.key)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all">
+                            <RefreshCw size={10} />
+                         </button>
+                      )}
                     </span>
                   </div>
                 ))}
@@ -509,10 +535,12 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
               />
               <kbd className="hidden sm:inline-block ml-3 px-2 py-1 text-xs border border-[var(--border-color)] rounded bg-[var(--slate-100)] dark:bg-[var(--primary-900)] text-[var(--text-muted)]">ESC</kbd>
             </div>
-            <div className="p-4 bg-[var(--slate-50)] dark:bg-[var(--primary-950)]/50 min-h-[300px] flex flex-col items-center justify-center text-center">
-              <Compass size={48} className="text-[var(--primary-400)] mb-4 opacity-50" />
-              <p className="text-[var(--text-secondary)] font-medium">Bắt đầu gõ để tìm kiếm trên AIO.MS Workspace</p>
-              <p className="text-[var(--text-muted)] text-sm mt-2">Hỗ trợ tìm kiếm: Phân hệ, Cảnh báo, Nhân viên, Mã đơn hàng...</p>
+            <div className="p-4 bg-[var(--slate-50)] dark:bg-[var(--primary-900)]/10 min-h-[300px] flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'var(--primary-500)15' }}>
+                 <Compass size={40} className="text-[var(--primary-500)]" />
+              </div>
+              <p className="text-[var(--text-primary)] font-bold text-lg">Bắt đầu gõ để tìm kiếm trên AIO.MS Workspace</p>
+              <p className="text-[var(--text-secondary)] text-sm mt-1 max-w-sm">Hỗ trợ tìm kiếm: Phân hệ, Cảnh báo, Nhân viên, Mã đơn hàng...</p>
             </div>
           </div>
         </div>

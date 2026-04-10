@@ -63,55 +63,73 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json();
+    const { password, ...empData } = data;
+
     // 1. Get dept ID from name (since frontend sends name)
     const dept = await prisma.department.findFirst({
-      where: { name: data.department }
+      where: { name: empData.department }
     });
+
+    // 2. Prepare user creation if password is provided
+    let userId: string | null = null;
+    if (password && empData.email) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await prisma.user.create({
+        data: {
+          email: empData.email,
+          name: empData.name,
+          password: hashedPassword,
+          isActive: true,
+        }
+      });
+      userId = user.id;
+
+      // Assign initial role to user
+      if (empData.sysRole) {
+        const role = await prisma.role.findUnique({ where: { code: empData.sysRole } });
+        if (role) {
+          await prisma.userRole.create({
+            data: {
+              userId: user.id,
+              roleId: role.id
+            }
+          });
+        }
+      }
+    }
 
     const employee = await prisma.employee.create({
       data: {
-        employeeCode: `NV-${Math.floor(Math.random() * 900) + 100}`, // Simple generator for now
-        fullName: data.name,
-        email: data.email,
-        phone: data.phone,
+        employeeCode: `NV-${Math.floor(Math.random() * 900) + 100}`,
+        fullName: empData.name,
+        email: empData.email,
+        phone: empData.phone,
         departmentId: dept?.id || '',
-        position: data.position,
-        level: data.level,
-        status: data.status,
-        sysRole: data.sysRole || null,
-        hireDate: new Date(data.hireDate),
+        position: empData.position,
+        level: empData.level,
+        status: empData.status,
+        sysRole: empData.sysRole || null,
+        hireDate: new Date(empData.hireDate),
+        userId: userId
       }
     });
 
-    // Attempt to sync role and name if user account already exists
-    if (data.email) {
+    // If user already existed (not created just now) but need to sync
+    if (!userId && empData.email) {
       try {
-         const linkedUser = await prisma.user.findUnique({ where: { email: data.email } });
+         const linkedUser = await prisma.user.findUnique({ where: { email: empData.email } });
          if (linkedUser) {
-            if (linkedUser.name !== data.name) {
-              await prisma.user.update({
-                 where: { id: linkedUser.id },
-                 data: { name: data.name }
-              });
-            }
-            if (data.sysRole) {
-               const role = await prisma.role.findUnique({ where: { code: data.sysRole } });
-               if (role) {
-                  await prisma.userRole.deleteMany({
-                    where: { userId: linkedUser.id }
-                  });
-                  await prisma.userRole.create({
-                    data: {
-                      userId: linkedUser.id,
-                      roleId: role.id
-                    }
-                  });
-               }
+            await prisma.employee.update({
+              where: { id: employee.id },
+              data: { userId: linkedUser.id }
+            });
+            // ... (sync logic for existing user)
+            if (linkedUser.name !== empData.name) {
+              await prisma.user.update({ where: { id: linkedUser.id }, data: { name: empData.name } });
             }
          }
       } catch(e) {
-         console.error("Failed to sync new employee data to user account", e);
+         console.error("Failed to sync existing user account", e);
       }
     }
 

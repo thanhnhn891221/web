@@ -387,13 +387,14 @@ interface StatCardProps {
   changeLabel?: string;
   icon: LucideIcon;
   color: string;
+  onClick?: () => void;
 }
 
-export function StatCard({ title, value, change, changeLabel, icon: Icon, color }: StatCardProps) {
+export function StatCard({ title, value, change, changeLabel, icon: Icon, color, onClick }: StatCardProps) {
   const isPositive = change && change > 0;
 
   return (
-    <Card hover className="group">
+    <Card hover className={`group ${onClick ? 'cursor-pointer' : ''}`} onClick={onClick}>
       <div className="flex items-start justify-between">
         <div
           className="w-11 h-11 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-110"
@@ -455,3 +456,40 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
 }
 
 export * from './ConfirmModal';
+// ============================================
+// View Toggle Component
+// ============================================
+
+interface ViewToggleProps {
+  current: 'grid' | 'list';
+  onChange: (view: 'grid' | 'list') => void;
+}
+
+export function ViewToggle({ current, onChange }: ViewToggleProps) {
+  return (
+    <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+      <button
+        onClick={() => onChange('list')}
+        className={`p-1.5 rounded-md transition-all ${
+          current === 'list'
+            ? 'bg-white dark:bg-slate-700 shadow-sm text-[var(--primary-600)]'
+            : 'text-slate-500 hover:text-slate-700'
+        }`}
+        title="Dạng danh sách"
+      >
+        <LayoutList size={18} />
+      </button>
+      <button
+        onClick={() => onChange('grid')}
+        className={`p-1.5 rounded-md transition-all ${
+          current === 'grid'
+            ? 'bg-white dark:bg-slate-700 shadow-sm text-[var(--primary-600)]'
+            : 'text-slate-500 hover:text-slate-700'
+        }`}
+        title="Dạng lưới"
+      >
+        <LayoutGrid size={18} />
+      </button>
+    </div>
+  );
+}

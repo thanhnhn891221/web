@@ -19,6 +19,7 @@ export interface JWTPayload {
     canCreate: boolean;
     canEdit: boolean;
     canDelete: boolean;
+    canManage: boolean;
   }[];
 }
 

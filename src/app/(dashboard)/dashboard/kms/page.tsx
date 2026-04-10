@@ -122,12 +122,12 @@ export default function KMSPage() {
     const map: Record<string, any> = {};
     modulesList.forEach(m => {
        const existingPerm = role.permissions?.find((p:any) => p.moduleId === m.id);
-       map[m.id] = existingPerm ? { ...existingPerm } : { moduleId: m.id, canView: false, canCreate: false, canEdit: false, canDelete: false };
+       map[m.id] = existingPerm ? { ...existingPerm } : { moduleId: m.id, canView: false, canCreate: false, canEdit: false, canDelete: false, canManage: false };
     });
     setPermissionsMap(map);
   };
 
-  const togglePermission = (moduleId: string, field: 'canView'|'canCreate'|'canEdit'|'canDelete') => {
+  const togglePermission = (moduleId: string, field: 'canView'|'canCreate'|'canEdit'|'canDelete'|'canManage') => {
     setPermissionsMap(prev => ({
       ...prev,
       [moduleId]: { ...prev[moduleId], [field]: !prev[moduleId][field] }
@@ -238,9 +238,9 @@ export default function KMSPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in stagger-children">
-        <StatCard title="Tổng Roles" value={rolesData.length} icon={Users} color="var(--primary-500)" />
-        <StatCard title="Tổng Modules" value={allModules.length} icon={Network} color="var(--emerald)" />
-        <StatCard title="Log hôm nay" value={logsTotal} icon={FileText} color="var(--accent-500)" />
+        <StatCard title="Tổng Roles" value={rolesData.length} icon={Users} color="var(--primary-500)" onClick={() => setActiveTab('rbac')} />
+        <StatCard title="Tổng Modules" value={allModules.length} icon={Network} color="var(--emerald)" onClick={() => setActiveTab('rbac')} />
+        <StatCard title="Log hôm nay" value={logsTotal} icon={FileText} color="var(--accent-500)" onClick={() => { setActiveTab('logs'); fetchLogs(1); }} />
         <StatCard title="Uptime" value="14d 2h" icon={Clock} color="var(--slate-500)" />
       </div>
 
@@ -284,6 +284,7 @@ export default function KMSPage() {
                               <th className="px-4 py-3 text-center">Tạo</th>
                               <th className="px-4 py-3 text-center">Sửa</th>
                               <th className="px-4 py-3 text-center">Xóa</th>
+                              <th className="px-4 py-3 text-center">Mật Khẩu</th>
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -299,6 +300,7 @@ export default function KMSPage() {
                                     <td className="px-4 py-3 text-center"><ToggleSwitch checked={p.canCreate} onChange={() => togglePermission(mod.id, 'canCreate')} color="bg-blue-500" /></td>
                                     <td className="px-4 py-3 text-center"><ToggleSwitch checked={p.canEdit} onChange={() => togglePermission(mod.id, 'canEdit')} color="bg-amber-500" /></td>
                                     <td className="px-4 py-3 text-center"><ToggleSwitch checked={p.canDelete} onChange={() => togglePermission(mod.id, 'canDelete')} color="bg-rose-500" /></td>
+                                    <td className="px-4 py-3 text-center"><ToggleSwitch checked={p.canManage} onChange={() => togglePermission(mod.id, 'canManage')} color="bg-orange-500" /></td>
                                  </tr>
                                )
                            })}

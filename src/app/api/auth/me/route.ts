@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
         canCreate: p.canCreate,
         canEdit: p.canEdit,
         canDelete: p.canDelete,
+        canManage: p.canManage,
       }))
     }));
 

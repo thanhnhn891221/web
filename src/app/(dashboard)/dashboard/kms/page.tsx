@@ -53,8 +53,8 @@ export default function KMSPage() {
   }, []);
 
   // ─── Fetch Functions ─────────────────────────────────────
-  const fetchSettings = async () => {
-    setIsLoadingSettings(true);
+  const fetchSettings = async (isSilent = false) => {
+    if (!isSilent || settings.length === 0) setIsLoadingSettings(true);
     try {
       const res = await fetch('/api/core/settings');
       const json = await res.json();
@@ -63,8 +63,8 @@ export default function KMSPage() {
     finally { setIsLoadingSettings(false); }
   };
 
-  const fetchRBAC = async () => {
-    setIsLoadingRBAC(true);
+  const fetchRBAC = async (isSilent = false) => {
+    if (!isSilent || rolesData.length === 0) setIsLoadingRBAC(true);
     
     // Check cache first
     const cachedData = sessionStorage.getItem('aio_kms_rbac_cache');
@@ -102,8 +102,8 @@ export default function KMSPage() {
     finally { setIsLoadingRBAC(false); }
   };
 
-  const fetchLogs = async (page: number) => {
-    setIsLoadingLogs(true);
+  const fetchLogs = async (page: number, isSilent = false) => {
+    if (!isSilent || logs.length === 0) setIsLoadingLogs(true);
     try {
       const res = await fetch(`/api/core/logs?page=${page}&limit=30`);
       const json = await res.json();
@@ -183,7 +183,7 @@ export default function KMSPage() {
       const res = await fetch('/api/core/settings', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, value })
       });
-      if (res.ok) { setConfirmConfig(prev => ({ ...prev, isOpen: false })); fetchSettings(); }
+       if (res.ok) { setConfirmConfig(prev => ({ ...prev, isOpen: false })); fetchSettings(true); }
     } catch (err) { console.error(err); }
   };
 
@@ -192,7 +192,7 @@ export default function KMSPage() {
       const res = await fetch('/api/core/settings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(addForm)
       });
-      if (res.ok) { setIsAddModalOpen(false); fetchSettings(); }
+       if (res.ok) { setIsAddModalOpen(false); fetchSettings(true); }
     } catch (err) { console.error(err); }
   };
 
@@ -318,7 +318,16 @@ export default function KMSPage() {
           <Card padding="none" className="overflow-hidden shadow-premium">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <h3 className="font-bold text-sm flex items-center gap-2"><Activity size={16} className="text-primary-500" /> Nhật ký Hoạt động Hệ thống</h3>
-              <Button size="sm" variant="outline" icon={RefreshCw} onClick={() => fetchLogs(logsPage)}>Làm mới</Button>
+              <div className="flex items-center gap-3">
+                <div className="relative group hidden md:block">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-colors" size={14} />
+                  <input 
+                    placeholder="Tìm nhật ký..." 
+                    className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all w-48"
+                  />
+                </div>
+                <Button size="sm" variant="outline" icon={RefreshCw} onClick={() => fetchLogs(logsPage)}>Làm mới</Button>
+              </div>
             </div>
             {isLoadingLogs ? (
               <div className="p-10 flex flex-col items-center gap-3">

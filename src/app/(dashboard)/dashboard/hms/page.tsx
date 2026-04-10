@@ -108,7 +108,7 @@ export default function HMSPage() {
   // Global Sync Listener
   useEffect(() => {
     const handleSync = (e: any) => {
-      if (e.detail?.module === 'hms') fetchData();
+      if (e.detail?.module === 'hms') fetchData(true);
     };
     window.addEventListener('aio-sync-complete', handleSync);
     return () => window.removeEventListener('aio-sync-complete', handleSync);
@@ -128,9 +128,9 @@ export default function HMSPage() {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    // Only show loading visually if we have no cached data yet
-    if (employees.length === 0) setIsLoading(true);
+  const fetchData = async (isBackground = false) => {
+    // Only show loading visually if we have no cached data yet AND it's not a background sync
+    if (employees.length === 0 && !isBackground) setIsLoading(true);
     try {
       const [empRes, deptRes, roleRes] = await Promise.all([
         fetch('/api/employees'),
@@ -215,7 +215,7 @@ export default function HMSPage() {
       });
       if (res.ok) {
         setIsAccountModalOpen(false);
-        fetchData();
+        fetchData(true);
         // Trigger global sync request to refresh session if needed
         window.dispatchEvent(new CustomEvent('aio-sync-request', { detail: { module: 'session' } }));
       } else {
@@ -257,7 +257,7 @@ export default function HMSPage() {
       if (res.ok) {
         setIsEmployeeModalOpen(false);
         setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-        fetchData();
+        fetchData(true);
       }
     } catch (err) { console.error(err); }
   };
@@ -290,7 +290,7 @@ export default function HMSPage() {
       if (res.ok) {
         setIsDeptModalOpen(false);
         setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-        fetchData();
+        fetchData(true);
       }
     } catch (err) { console.error(err); }
   };
@@ -408,7 +408,10 @@ export default function HMSPage() {
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Nhân sự, phòng ban & quỹ lương</p>
           </div>
         </div>
-        {renderHeaderButton()}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" icon={RefreshCw} onClick={() => fetchData(true)} className="hidden sm:flex" />
+          {renderHeaderButton()}
+        </div>
       </div>
 
       <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--primary-900)' }}>
@@ -441,15 +444,15 @@ export default function HMSPage() {
         <div className="space-y-4 animate-fade-in">
           {/* Enhanced Filter Bar */}
           <div className="flex flex-col lg:flex-row gap-3 bg-[var(--bg-card)] p-3 rounded-xl border border-[var(--border-color)]">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={18} />
-              <Input 
-                placeholder="Tìm tên, mã hoặc email..." 
-                className="pl-10" 
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-            </div>
+          <div className="relative flex-1 group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--primary-500)] transition-colors" size={18} />
+            <Input 
+              placeholder="Tìm tên, mã hoặc email..." 
+              className="pl-10 focus:ring-2 focus:ring-[var(--primary-500)]/20 focus:border-[var(--primary-500)]" 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
             <div className="flex flex-wrap items-center gap-3">
               <Select 
                 value={statusFilter} 

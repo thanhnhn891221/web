@@ -25,7 +25,9 @@ interface EmployeeData {
   status: string;
   hireDate: string;
   sysRole: string;
+  hasAccount?: boolean;
 }
+
 
 interface DepartmentData {
   id: string;
@@ -690,7 +692,7 @@ export default function HMSPage() {
         <div className="space-y-6">
           <div className="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-[var(--border-color)]">
             <div className="w-12 h-12 rounded-full bg-[var(--primary-100)] dark:bg-[var(--primary-900)]/30 text-[var(--primary-600)] flex items-center justify-center font-bold text-xl">
-              {accountEmp?.name.charAt(0)}
+               {accountEmp?.name.charAt(0)}
             </div>
             <div>
               <p className="font-bold text-lg">{accountEmp?.name}</p>
@@ -698,44 +700,85 @@ export default function HMSPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" icon={Unlock} className="justify-start h-12 text-emerald-600 border-emerald-100 hover:bg-emerald-50" onClick={() => handleAccountAction('unlock')} isLoading={isSyncing}>Mở khóa</Button>
-            <Button variant="outline" icon={Lock} className="justify-start h-12 text-rose-600 border-rose-100 hover:bg-rose-50" onClick={() => handleAccountAction('lock')} isLoading={isSyncing}>Khóa tài khoản</Button>
-          </div>
-
-          <div className="pt-6 border-t border-[var(--border-color)]">
-            <h4 className="text-sm font-bold flex items-center gap-2 mb-4">
-              <Key size={16} className="text-amber-500" /> Đặt lại mật khẩu
-            </h4>
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Mật khẩu mới..." 
-                  value={generatedPassword} 
-                  onChange={e => setGeneratedPassword(e.target.value)}
-                  className="flex-1"
-                />
-                <Button variant="outline" onClick={generateRandomPassword} icon={RefreshCw}>Random</Button>
+          {!accountEmp?.hasAccount ? (
+            <div className="pt-2">
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 flex gap-3 text-amber-800 mb-4">
+                <AlertTriangle size={20} className="shrink-0 text-amber-500" />
+                <p className="text-sm">Nhân viên này chưa có tài khoản hệ thống. Khai báo tài khoản để cấp quyền đăng nhập.</p>
               </div>
-              {generatedPassword && (
-                <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-lg animate-fade-in">
-                  <code className="font-mono font-bold text-amber-700 dark:text-amber-400">{generatedPassword}</code>
-                  <button onClick={() => copyToClipboard(generatedPassword)} className="flex items-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-700">
-                    <Copy size={12} /> Sao chép
-                  </button>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Mật khẩu khởi tạo..." 
+                    value={generatedPassword} 
+                    onChange={e => setGeneratedPassword(e.target.value)}
+                    className="flex-1"
+                    icon={Lock}
+                  />
+                  <Button variant="outline" onClick={generateRandomPassword} icon={RefreshCw}>Random</Button>
                 </div>
-              )}
-              <Button 
-                variant="primary" 
-                className="w-full mt-2" 
-                disabled={!generatedPassword || isSyncing}
-                onClick={() => handleAccountAction('reset-password', generatedPassword)}
-                isLoading={isSyncing}
-              >
-                Xác nhận đổi mật khẩu
-              </Button>
+                {generatedPassword && (
+                  <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-lg">
+                    <code className="font-mono font-bold text-amber-700 dark:text-amber-400">{generatedPassword}</code>
+                    <button onClick={() => copyToClipboard(generatedPassword)} className="flex items-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-700">
+                      <Copy size={12} /> Sao chép
+                    </button>
+                  </div>
+                )}
+                <Button 
+                  variant="primary" 
+                  className="w-full mt-2" 
+                  disabled={!generatedPassword || isSyncing}
+                  onClick={() => handleAccountAction('create-account', generatedPassword)}
+                  isLoading={isSyncing}
+                  icon={UserPlus}
+                >
+                  Tạo tài khoản hệ thống
+                </Button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" icon={Unlock} className="justify-start h-12 text-emerald-600 border-emerald-100 hover:bg-emerald-50" onClick={() => handleAccountAction('unlock')} isLoading={isSyncing}>Mở khóa</Button>
+                <Button variant="outline" icon={Lock} className="justify-start h-12 text-rose-600 border-rose-100 hover:bg-rose-50" onClick={() => handleAccountAction('lock')} isLoading={isSyncing}>Khóa tài khoản</Button>
+              </div>
+
+              <div className="pt-6 border-t border-[var(--border-color)]">
+                <h4 className="text-sm font-bold flex items-center gap-2 mb-4">
+                  <Key size={16} className="text-amber-500" /> Đặt lại mật khẩu
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="Mật khẩu mới..." 
+                      value={generatedPassword} 
+                      onChange={e => setGeneratedPassword(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button variant="outline" onClick={generateRandomPassword} icon={RefreshCw}>Random</Button>
+                  </div>
+                  {generatedPassword && (
+                    <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-lg animate-fade-in">
+                      <code className="font-mono font-bold text-amber-700 dark:text-amber-400">{generatedPassword}</code>
+                      <button onClick={() => copyToClipboard(generatedPassword)} className="flex items-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-700">
+                        <Copy size={12} /> Sao chép
+                      </button>
+                    </div>
+                  )}
+                  <Button 
+                    variant="primary" 
+                    className="w-full mt-2" 
+                    disabled={!generatedPassword || isSyncing}
+                    onClick={() => handleAccountAction('reset-password', generatedPassword)}
+                    isLoading={isSyncing}
+                  >
+                    Xác nhận đổi mật khẩu
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
 

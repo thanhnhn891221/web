@@ -28,7 +28,37 @@ export async function PATCH(
       include: { user: true }
     });
 
-    if (!employee || !employee.userId) {
+    if (!employee) {
+      return NextResponse.json({ error: 'Không tìm thấy nhân viên' }, { status: 404 });
+    }
+
+    if (action === 'create-account') {
+      if (employee.userId) return NextResponse.json({ error: 'Nhân viên này đã có tài khoản hệ thống' }, { status: 400 });
+      if (!password) return NextResponse.json({ error: 'Thiếu mật khẩu khởi tạo' }, { status: 400 });
+      if (!employee.email) return NextResponse.json({ error: 'Nhân viên chưa khai báo email doanh nghiệp' }, { status: 400 });
+
+      const existingUser = await prisma.user.findUnique({ where: { email: employee.email } });
+      if (existingUser) return NextResponse.json({ error: 'Email này đã tồn tại trên một tài khoản khác' }, { status: 400 });
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = await prisma.user.create({
+        data: {
+          email: employee.email,
+          password: hashedPassword,
+          name: employee.fullName,
+          isActive: true
+        }
+      });
+
+      await prisma.employee.update({
+        where: { id: employee.id },
+        data: { userId: newUser.id }
+      });
+
+      return NextResponse.json({ success: true, message: 'Đã tạo tài khoản hệ thống thành công' });
+    }
+
+    if (!employee.userId) {
       return NextResponse.json({ error: 'Nhân viên này chưa có tài khoản hệ thống' }, { status: 404 });
     }
 

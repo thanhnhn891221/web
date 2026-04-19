@@ -10,8 +10,13 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "AIO.MS — All-in-One Management System",
-  description: "Hệ thống Quản trị Toàn diện Doanh nghiệp — Khơi Nguồn Thịnh Vượng",
-  keywords: ["ERP", "management", "enterprise", "AIO.MS", "quản trị doanh nghiệp"],
+  description: "AIO.MS by AIO.ECOSYSTEM — Hệ thống Quản trị Toàn diện Doanh nghiệp",
+  keywords: ["ERP", "management", "enterprise", "AIO.MS", "AIO.ECOSYSTEM", "quản trị doanh nghiệp"],
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

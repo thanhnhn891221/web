@@ -1,6 +1,9 @@
 // AIO.MS — Database Schema
 // PostgreSQL via Supabase + Prisma ORM
 // RBAC: Many-to-many User ↔ Role, Role ↔ Module permissions
+// ═══════════════════════════════════════════════════════════
+// Schema version: 2.0 — All 5 Phases included
+// ═══════════════════════════════════════════════════════════
 
 generator client {
   provider = "prisma-client-js"
@@ -32,6 +35,11 @@ model User {
   userRoles   UserRole[]
   employee    Employee?
   auditLogs   AuditLog[]
+
+  // Phase 5: Chat
+  chatRoomMembers ChatRoomMember[]
+  chatMessages    ChatMessage[]
+  taskComments    TaskComment[]
 
   @@map("users")
 }
@@ -144,41 +152,246 @@ model Department {
   children    Department[] @relation("DeptHierarchy")
   managerId   String?
   description String?
+  level       Int          @default(0)
+  sortOrder   Int          @default(0)
   isActive    Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   deletedAt   DateTime?
 
-  employees   Employee[]
-  budgets     Budget[]
+  employees       Employee[]
+  budgets         Budget[]
+  tasks           Task[]
+  costAllocations CostAllocation[]
+  depreciations   Depreciation[]
 
   @@map("departments")
 }
 
 model Employee {
-  id           String   @id @default(cuid())
-  employeeCode String   @unique  // NV-001, NV-002
-  fullName     String
-  email        String   @unique
-  phone        String?
-  avatar       String?
-  departmentId String
-  department   Department @relation(fields: [departmentId], references: [id])
-  position     String
-  level        String?  // intern, junior, mid, senior, lead, manager, director
-  hireDate     DateTime
-  status       String   @default("active") // active, probation, on_leave, resigned
-  salary       Float?
-  sysRole      String?  // Ghi chú vai trò hệ thống: Admin, Manager, User...
-  userId       String?  @unique
-  user         User?    @relation(fields: [userId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  deletedAt    DateTime?
+  id             String   @id @default(cuid())
+  employeeCode   String   @unique  // NV-001, NV-002
+  fullName       String
+  email          String   @unique
+  phone          String?
+  avatar         String?
+  departmentId   String
+  department     Department @relation(fields: [departmentId], references: [id])
+  position       String
+  level          String?  // intern, junior, mid, senior, lead, manager, director
+  hireDate       DateTime
+  status         String   @default("active") // active, probation, on_leave, resigned
+  salary         Float?
+  sysRole        String?  // Ghi chú vai trò hệ thống: Admin, Manager, User...
+  userId         String?  @unique
+  user           User?    @relation(fields: [userId], references: [id])
+  // Phase 1 expanded fields
+  dateOfBirth    DateTime?
+  gender         String?  @default("other")
+  idNumber       String?
+  address        String?
+  bankAccount    String?
+  bankName       String?
+  taxCode        String?
+  insuranceCode  String?
+  contractType   String?  @default("permanent")
+  contractEndDate DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  // Phase 1 relations
+  attendances      Attendance[]
+  leaveRequests    LeaveRequest[]
+  leaveBalances    LeaveBalance[]
+  payrollRecords   PayrollRecord[]
+  careerPaths      CareerPath[]
+  achievements     Achievement[]
+  // Phase 2 relations
+  salesAssignments SalesAssignment[]
+  callLogs         CallLog[]
+  posSessions      POSSession[]
+  appointments     Appointment[]
+  // Phase 5 relations
+  tasksAssigned    Task[]  @relation("TaskAssignee")
+  tasksReported    Task[]  @relation("TaskReporter")
 
   @@index([departmentId])
   @@index([status])
   @@map("employees")
+}
+
+// Phase 1: Ca làm (Work Shifts)
+model WorkShift {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  startTime     String   // "08:00"
+  endTime       String   // "17:00"
+  breakMinutes  Int      @default(60)
+  workingHours  Float    @default(8)
+  color         String?  @default("#3B82F6")
+  isOvernight   Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  attendances   Attendance[]
+
+  @@map("work_shifts")
+}
+
+// Phase 1: Chấm công (Attendances)
+model Attendance {
+  id              String   @id @default(cuid())
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shiftId         String?
+  shift           WorkShift? @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  date            DateTime @db.Date
+  checkIn         DateTime?
+  checkOut        DateTime?
+  checkInMethod   String?  @default("manual") // manual, fingerprint, face, gps
+  checkInLocation String?
+  workingHours    Float?   @default(0)
+  overtimeHours   Float?   @default(0)
+  status          String   @default("present") // present, absent, late, early_leave, on_leave, holiday
+  note            String?
+  approvedBy      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([employeeId, date])
+  @@index([employeeId])
+  @@index([date])
+  @@index([status])
+  @@map("attendances")
+}
+
+// Phase 1: Nghỉ phép (Leave Requests)
+model LeaveRequest {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type         String   @default("annual") // annual, sick, maternity, unpaid, compassionate, other
+  startDate    DateTime @db.Date
+  endDate      DateTime @db.Date
+  totalDays    Float    @default(1)
+  reason       String?
+  status       String   @default("pending") // pending, approved, rejected, cancelled
+  approvedBy   String?
+  approvedAt   DateTime?
+  rejectReason String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  @@index([employeeId])
+  @@index([status])
+  @@map("leave_requests")
+}
+
+// Phase 1: Số ngày phép (Leave Balances)
+model LeaveBalance {
+  id            String   @id @default(cuid())
+  employeeId    String
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  year          Int
+  type          String   @default("annual")
+  totalDays     Float    @default(12)
+  usedDays      Float    @default(0)
+  remainingDays Float    @default(12)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([employeeId, year, type])
+  @@map("leave_balances")
+}
+
+// Phase 1: Lương thưởng (Payroll Records)
+model PayrollRecord {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  period          String   // "2026-04"
+  baseSalary      Float    @default(0)
+  allowances      Float    @default(0)
+  overtime        Float    @default(0)
+  bonus           Float    @default(0)
+  deductions      Float    @default(0)
+  socialInsurance Float    @default(0)
+  healthInsurance Float    @default(0)
+  personalTax     Float    @default(0)
+  netSalary       Float    @default(0)
+  workingDays     Float    @default(0)
+  paidLeave       Float    @default(0)
+  unpaidLeave     Float    @default(0)
+  status          String   @default("draft") // draft, calculated, approved, paid
+  paidAt          DateTime?
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@unique([employeeId, period])
+  @@index([employeeId])
+  @@index([period])
+  @@index([status])
+  @@map("payroll_records")
+}
+
+// Phase 1: Lộ trình thăng tiến (Career Paths)
+model CareerPath {
+  id              String   @id @default(cuid())
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  currentPosition String
+  currentLevel    String?
+  targetPosition  String
+  targetLevel     String?
+  targetDate      DateTime?
+  requirements    String?
+  progress        Int      @default(0) // 0-100%
+  status          String   @default("active") // active, completed, paused
+  mentorId        String?
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@index([employeeId])
+  @@map("career_paths")
+}
+
+// Phase 1: Thành tích (Achievements / KPI)
+model Achievement {
+  id            String   @id @default(cuid())
+  employeeId    String
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  title         String
+  type          String   @default("kpi") // kpi, award, certificate, disciplinary
+  category      String?
+  period        String?
+  targetValue   Float?
+  actualValue   Float?
+  score         Float?
+  rating        String?
+  awardAmount   Float?   @default(0)
+  description   String?
+  evidenceUrl   String?
+  evaluatedBy   String?
+  evaluatedAt   DateTime?
+  status        String   @default("pending") // pending, approved, rejected
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  @@index([employeeId])
+  @@index([type])
+  @@map("achievements")
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -256,9 +469,10 @@ model Warehouse {
   updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
 
-  inventoryItems InventoryItem[]
+  inventoryItems     InventoryItem[]
   stockMovementsFrom StockMovement[] @relation("MovementFrom")
   stockMovementsTo   StockMovement[] @relation("MovementTo")
+  stockAlerts        StockAlert[]
 
   @@map("warehouses")
 }
@@ -278,6 +492,8 @@ model InventoryItem {
   lastUpdated  DateTime @default(now())
   updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
+
+  stockAlerts  StockAlert[]
 
   @@index([warehouseId])
   @@index([sku])
@@ -306,24 +522,65 @@ model StockMovement {
   @@map("stock_movements")
 }
 
+// Phase 2: Cảnh báo tồn kho
+model StockAlert {
+  id          String   @id @default(cuid())
+  itemId      String
+  item        InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemName    String
+  sku         String?
+  warehouseId String?
+  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  currentQty  Float    @default(0)
+  minQty      Float    @default(0)
+  alertType   String   @default("low_stock") // low_stock, out_of_stock, overstock
+  severity    String   @default("warning") // info, warning, critical
+  isResolved  Boolean  @default(false)
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([alertType])
+  @@index([isResolved])
+  @@map("stock_alerts")
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// OMS, SMS & TMS — Market & Operations Expansion
+// OMS, SMS & TMS — Market & Operations
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 model Customer {
-  id        String   @id @default(cuid())
-  name      String
-  phone     String?
-  email     String?
-  type      String   @default("B2B") // B2B, B2C
-  tier      String?  @default("standard")
-  rating    Float?   @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
+  id             String   @id @default(cuid())
+  name           String
+  phone          String?
+  email          String?
+  type           String   @default("B2B") // B2B, B2C
+  tier           String?  @default("standard")
+  rating         Float?   @default(0)
+  // Phase 2 expanded
+  code           String?
+  address        String?
+  taxCode        String?
+  source         String?  @default("direct")
+  groupId        String?
+  loyaltyTierId  String?
+  loyaltyPoints  Int      @default(0)
+  totalSpent     Float    @default(0)
+  note           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
 
-  salesOrders SalesOrder[]
-  invoices    Invoice[]
+  salesOrders      SalesOrder[]
+  invoices         Invoice[]
+  loyaltyPointsTx  LoyaltyPoint[]
+  customerFeedbacks CustomerFeedback[]
+  onlineOrders     OnlineOrder[]
+  salesAssignments SalesAssignment[]
+  deposits         Deposit[]
+  appointments     Appointment[]
+  warrantyTickets  WarrantyTicket[]
 
   @@map("customers")
 }
@@ -345,6 +602,7 @@ model SalesOrder {
   items           SalesOrderItem[]
   shipments       Shipment[]
   invoices        Invoice[]
+  deposits        Deposit[]
 
   @@index([customerId])
   @@index([status])
@@ -430,6 +688,264 @@ model Shipment {
   @@map("shipments")
 }
 
+// Phase 2: Customer Groups
+model CustomerGroup {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String
+  description     String?
+  discountPercent Float?   @default(0)
+  color           String?  @default("#3B82F6")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@map("customer_groups")
+}
+
+// Phase 2: Loyalty Tiers
+model LoyaltyTier {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String
+  minPoints       Int      @default(0)
+  maxPoints       Int?
+  discountPercent Float?   @default(0)
+  pointMultiplier Float?   @default(1)
+  benefits        String?
+  color           String?  @default("#CD7F32")
+  icon            String?
+  sortOrder       Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("loyalty_tiers")
+}
+
+// Phase 2: Loyalty Points
+model LoyaltyPoint {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type        String   @default("earn") // earn, spend, adjust, expire
+  points      Int
+  balance     Int      @default(0)
+  description String?
+  refType     String?
+  refId       String?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([customerId])
+  @@map("loyalty_points")
+}
+
+// Phase 2: Loyalty Campaigns
+model LoyaltyCampaign {
+  id               String   @id @default(cuid())
+  name             String
+  type             String   @default("points_multiplier")
+  triggerCondition String?
+  rewardType       String   @default("points")
+  rewardValue      Float    @default(0)
+  startDate        DateTime?
+  endDate          DateTime?
+  targetTierIds    String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
+  @@map("loyalty_campaigns")
+}
+
+// Phase 2: Customer Feedbacks
+model CustomerFeedback {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type        String   @default("feedback")
+  channel     String?  @default("app")
+  subject     String
+  content     String?
+  rating      Int?
+  refType     String?
+  refId       String?
+  status      String   @default("open")
+  assignedTo  String?
+  resolution  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  @@index([customerId])
+  @@index([status])
+  @@map("customer_feedbacks")
+}
+
+// Phase 2: Online Orders
+model OnlineOrder {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  platform        String   @default("website")
+  platformOrderId String?
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName    String
+  customerPhone   String?
+  shippingAddress String?
+  items           Json?
+  subtotal        Float    @default(0)
+  discount        Float    @default(0)
+  shippingFee     Float    @default(0)
+  total           Float    @default(0)
+  paymentMethod   String?  @default("cod")
+  paymentStatus   String?  @default("unpaid")
+  status          String   @default("pending")
+  syncedAt        DateTime?
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@index([platform])
+  @@index([status])
+  @@map("online_orders")
+}
+
+// Phase 2: Sales Assignments
+model SalesAssignment {
+  id           String   @id @default(cuid())
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  region       String?
+  assignedDate DateTime @default(now()) @db.Date
+  quota        Float?   @default(0)
+  achieved     Float?   @default(0)
+  status       String   @default("active")
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([employeeId])
+  @@map("sales_assignments")
+}
+
+// Phase 2: Call Logs
+model CallLog {
+  id            String   @id @default(cuid())
+  employeeId    String?
+  employee      Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  customerPhone String
+  customerName  String?
+  direction     String   @default("outbound")
+  duration      Int?     @default(0)
+  status        String   @default("completed")
+  callType      String?  @default("ip")
+  recordingUrl  String?
+  note          String?
+  createdAt     DateTime @default(now())
+
+  @@index([employeeId])
+  @@map("call_logs")
+}
+
+// Phase 2: POS Sessions
+model POSSession {
+  id               String   @id @default(cuid())
+  code             String   @unique
+  employeeId       String
+  employee         Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  storeId          String?
+  openedAt         DateTime @default(now())
+  closedAt         DateTime?
+  openingBalance   Float    @default(0)
+  closingBalance   Float?
+  totalSales       Float    @default(0)
+  totalTransactions Int     @default(0)
+  status           String   @default("open")
+  note             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  transactions     POSTransaction[]
+
+  @@map("pos_sessions")
+}
+
+// Phase 2: POS Transactions
+model POSTransaction {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  sessionId     String
+  session       POSSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  customerId    String?
+  customerName  String?
+  items         Json?
+  subtotal      Float    @default(0)
+  discount      Float    @default(0)
+  tax           Float    @default(0)
+  total         Float    @default(0)
+  paymentMethod String   @default("cash")
+  amountPaid    Float    @default(0)
+  change        Float    @default(0)
+  status        String   @default("completed")
+  createdAt     DateTime @default(now())
+
+  @@index([sessionId])
+  @@map("pos_transactions")
+}
+
+// Phase 2: Appointments
+model Appointment {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName  String
+  customerPhone String?
+  employeeId    String?
+  employee      Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  storeId       String?
+  scheduledAt   DateTime
+  duration      Int?     @default(60)
+  service       String?
+  status        String   @default("scheduled")
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  @@index([scheduledAt])
+  @@map("appointments")
+}
+
+// Phase 2: Deposits
+model Deposit {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  salesOrderId String?
+  salesOrder   SalesOrder? @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+  amount       Float
+  method       String?  @default("transfer")
+  status       String   @default("active")
+  appliedAt    DateTime?
+  refundedAt   DateTime?
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  @@map("deposits")
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // FMS — Factory Management System
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -451,7 +967,8 @@ model ProductionLine {
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
 
-  orders      ProductionOrder[]
+  orders              ProductionOrder[]
+  productionCommands  ProductionCommand[]
 
   @@map("production_lines")
 }
@@ -466,20 +983,94 @@ model ProductionOrder {
   unit         String?
   lineId       String?
   line         ProductionLine? @relation(fields: [lineId], references: [id])
-  priority     String   @default("medium") // high, medium, low
-  status       String   @default("queued") // queued, in_progress, completed, on_hold
+  priority     String   @default("medium")
+  status       String   @default("queued")
   deadline     DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
+
+  productionCommands ProductionCommand[]
 
   @@index([lineId])
   @@index([status])
   @@map("production_orders")
 }
 
+// Phase 5: BOM — Bill of Materials
+model BillOfMaterial {
+  id             String   @id @default(cuid())
+  code           String   @unique
+  productName    String
+  productSku     String?
+  version        String?  @default("1.0")
+  outputQuantity Float    @default(1)
+  outputUnit     String   @default("pcs")
+  estimatedTime  Float?
+  estimatedCost  Float?   @default(0)
+  isActive       Boolean  @default(true)
+  note           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  items              BOMItem[]
+  productionCommands ProductionCommand[]
+
+  @@map("bill_of_materials")
+}
+
+model BOMItem {
+  id            String   @id @default(cuid())
+  bomId         String
+  bom           BillOfMaterial @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  materialName  String
+  materialSku   String?
+  quantity      Float    @default(1)
+  unit          String
+  unitCost      Float?   @default(0)
+  totalCost     Float?   @default(0)
+  wastagePercent Float?  @default(0)
+  isOptional    Boolean? @default(false)
+  note          String?
+  sortOrder     Int      @default(0)
+
+  @@index([bomId])
+  @@map("bom_items")
+}
+
+// Phase 5: Production Commands
+model ProductionCommand {
+  id                String   @id @default(cuid())
+  code              String   @unique
+  productionOrderId String?
+  productionOrder   ProductionOrder? @relation(fields: [productionOrderId], references: [id], onDelete: SetNull)
+  bomId             String?
+  bom               BillOfMaterial? @relation(fields: [bomId], references: [id], onDelete: SetNull)
+  productName       String
+  quantity          Float
+  completedQty      Float    @default(0)
+  unit              String?  @default("pcs")
+  lineId            String?
+  line              ProductionLine? @relation(fields: [lineId], references: [id], onDelete: SetNull)
+  scheduledStart    DateTime?
+  scheduledEnd      DateTime?
+  actualStart       DateTime?
+  actualEnd         DateTime?
+  status            String   @default("planned")
+  priority          String?  @default("medium")
+  assignedTo        String?
+  note              String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deletedAt         DateTime?
+
+  @@index([status])
+  @@map("production_commands")
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// AMS, BMS & CMS — Finance & Controling Group
+// AMS, BMS & CMS — Finance & Controlling
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 model Transaction {
@@ -490,7 +1081,7 @@ model Transaction {
   account     String
   debit       Float    @default(0)
   credit      Float    @default(0)
-  type        String   @default("revenue") // revenue, expense, receivable, payable, depreciation
+  type        String   @default("revenue")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
@@ -508,10 +1099,12 @@ model Invoice {
   customerName String
   amount       Float
   dueDate      DateTime
-  status       String   @default("unpaid") // paid, unpaid, overdue
+  status       String   @default("unpaid")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
+
+  eInvoices    EInvoice[]
 
   @@index([salesOrderId])
   @@index([customerId])
@@ -523,16 +1116,202 @@ model Budget {
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
   departmentName String
-  period       String   // e.g. "Q2/2026", "2026"
+  period       String
   allocated    Float
   spent        Float    @default(0)
-  status       String   @default("active") // active, closed
+  status       String   @default("active")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
 
   @@index([departmentId])
   @@map("budgets")
+}
+
+// Phase 4: Accounting Entries
+model AccountingEntry {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  date          DateTime @default(now()) @db.Date
+  type          String   @default("general")
+  accountDebit  String
+  accountCredit String
+  amount        Float    @default(0)
+  description   String
+  refType       String?
+  refId         String?
+  refCode       String?
+  currency      String?  @default("VND")
+  exchangeRate  Float?   @default(1)
+  status        String   @default("draft")
+  postedBy      String?
+  postedAt      DateTime?
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  cashFlows     CashFlow[]
+
+  @@index([type])
+  @@index([date])
+  @@index([status])
+  @@map("accounting_entries")
+}
+
+// Phase 4: Cash Flows
+model CashFlow {
+  id                String   @id @default(cuid())
+  code              String   @unique
+  type              String   // receipt, payment
+  category          String?
+  amount            Float    @default(0)
+  paymentMethod     String?  @default("cash")
+  bankAccount       String?
+  counterpartyName  String?
+  counterpartyId    String?
+  description       String
+  date              DateTime @default(now()) @db.Date
+  accountingEntryId String?
+  accountingEntry   AccountingEntry? @relation(fields: [accountingEntryId], references: [id], onDelete: SetNull)
+  status            String   @default("pending")
+  approvedBy        String?
+  approvedAt        DateTime?
+  note              String?
+  attachmentUrl     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deletedAt         DateTime?
+
+  @@index([type])
+  @@index([date])
+  @@map("cash_flows")
+}
+
+// Phase 4: Cost Allocations
+model CostAllocation {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String
+  type            String   @default("prepaid")
+  totalAmount     Float    @default(0)
+  allocatedAmount Float    @default(0)
+  remainingAmount Float    @default(0)
+  startDate       DateTime @db.Date
+  endDate         DateTime @db.Date
+  periods         Int      @default(12)
+  amountPerPeriod Float    @default(0)
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  accountDebit    String?
+  accountCredit   String?
+  status          String   @default("active")
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@map("cost_allocations")
+}
+
+// Phase 4: Depreciations
+model Depreciation {
+  id                      String   @id @default(cuid())
+  assetId                 String?
+  assetName               String
+  assetCode               String?
+  category                String?  @default("equipment")
+  originalCost            Float    @default(0)
+  residualValue           Float    @default(0)
+  usefulLife              Int      @default(60)
+  method                  String   @default("straight_line")
+  monthlyDepreciation     Float    @default(0)
+  accumulatedDepreciation Float    @default(0)
+  bookValue               Float    @default(0)
+  startDate               DateTime @db.Date
+  endDate                 DateTime? @db.Date
+  departmentId            String?
+  department              Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  accountDebit            String?
+  accountCredit           String?
+  status                  String   @default("active")
+  note                    String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  deletedAt               DateTime?
+
+  @@index([status])
+  @@map("depreciations")
+}
+
+// Phase 4: E-Invoices
+model EInvoice {
+  id              String   @id @default(cuid())
+  invoiceId       String?
+  invoice         Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  provider        String   @default("viettel")
+  invoiceNumber   String?
+  invoiceSeries   String?
+  issueDate       DateTime @default(now()) @db.Date
+  buyerName       String
+  buyerTaxCode    String?
+  buyerAddress    String?
+  buyerEmail      String?
+  items           Json?
+  subtotal        Float    @default(0)
+  vatAmount       Float    @default(0)
+  totalAmount     Float    @default(0)
+  currency        String?  @default("VND")
+  status          String   @default("draft")
+  signedAt        DateTime?
+  sentAt          DateTime?
+  pdfUrl          String?
+  xmlData         String?
+  errorLog        String?
+  externalId      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@index([provider])
+  @@index([status])
+  @@map("e_invoices")
+}
+
+// Phase 4: Journal Entries
+model JournalEntry {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  date        DateTime @default(now()) @db.Date
+  description String
+  type        String   @default("general")
+  totalDebit  Float    @default(0)
+  totalCredit Float    @default(0)
+  status      String   @default("draft")
+  postedBy    String?
+  postedAt    DateTime?
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  lines       JournalEntryLine[]
+
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id             String   @id @default(cuid())
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  accountCode    String
+  accountName    String?
+  debit          Float    @default(0)
+  credit         Float    @default(0)
+  description    String?
+
+  @@index([journalEntryId])
+  @@map("journal_entry_lines")
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -543,7 +1322,7 @@ model ResearchProject {
   id        String   @id @default(cuid())
   code      String   @unique // RD-001
   name      String
-  phase     String   @default("concept") // concept, research, prototype, testing, completed
+  phase     String   @default("concept")
   lead      String
   teamSize  Int      @default(1)
   progress  Int      @default(0)
@@ -568,13 +1347,272 @@ model MarketingCampaign {
   spent       Float    @default(0)
   leads       Int      @default(0)
   conversions Int      @default(0)
-  status      String   @default("planned") // planned, active, completed
-  period      String?  // e.g. "01/01 - 15/02/2026"
+  status      String   @default("planned")
+  period      String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
 
   @@map("marketing_campaigns")
+}
+
+// Phase 3: Contacts
+model Contact {
+  id              String   @id @default(cuid())
+  name            String
+  phone           String?
+  email           String?
+  company         String?
+  position        String?
+  source          String?  @default("manual")
+  sourceId        String?
+  tags            String?
+  status          String   @default("new")
+  assignedTo      String?
+  lastContactedAt DateTime?
+  note            String?
+  customFields    Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@index([source])
+  @@index([status])
+  @@index([assignedTo])
+  @@map("contacts")
+}
+
+// Phase 3: Data Sources
+model DataSource {
+  id             String   @id @default(cuid())
+  name           String
+  type           String   @default("manual")
+  platform       String?
+  totalContacts  Int      @default(0)
+  conversionRate Float?   @default(0)
+  lastSyncAt     DateTime?
+  config         Json?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("data_sources")
+}
+
+// Phase 3: Social Connections
+model SocialConnection {
+  id             String   @id @default(cuid())
+  platform       String
+  accountName    String
+  accountId      String?
+  accessToken    String?
+  refreshToken   String?
+  tokenExpiresAt DateTime?
+  shopId         String?
+  webhookUrl     String?
+  syncOrders     Boolean? @default(false)
+  syncMessages   Boolean? @default(false)
+  lastSyncAt     DateTime?
+  status         String   @default("disconnected")
+  errorLog       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([platform])
+  @@map("social_connections")
+}
+
+// Phase 3: Message Campaigns
+model MessageCampaign {
+  id              String   @id @default(cuid())
+  name            String
+  channel         String   @default("sms")
+  templateId      String?
+  content         String?
+  targetAudience  String?
+  targetCount     Int      @default(0)
+  sentCount       Int      @default(0)
+  deliveredCount  Int      @default(0)
+  failedCount     Int      @default(0)
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  status          String   @default("draft")
+  cost            Float?   @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@map("message_campaigns")
+}
+
+// Phase 3: Promotions
+model Promotion {
+  id                 String   @id @default(cuid())
+  code               String   @unique
+  name               String
+  type               String   @default("percent")
+  value              Float    @default(0)
+  minOrderAmount     Float?   @default(0)
+  maxDiscount        Float?
+  applicableProducts String?
+  startDate          DateTime
+  endDate            DateTime
+  usageLimit         Int?
+  usedCount          Int      @default(0)
+  perCustomerLimit   Int?     @default(1)
+  isStackable        Boolean? @default(false)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  deletedAt          DateTime?
+
+  vouchers           Voucher[]
+
+  @@map("promotions")
+}
+
+// Phase 3: Vouchers
+model Voucher {
+  id             String   @id @default(cuid())
+  code           String   @unique
+  promotionId    String?
+  promotion      Promotion? @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+  type           String   @default("percent")
+  value          Float    @default(0)
+  minOrderAmount Float?   @default(0)
+  maxDiscount    Float?
+  expiresAt      DateTime?
+  usageLimit     Int?     @default(1)
+  usedCount      Int      @default(0)
+  assignedTo     String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("vouchers")
+}
+
+// Phase 3: Affiliate Commissions
+model AffiliateCommission {
+  id               String   @id @default(cuid())
+  affiliateId      String
+  affiliateName    String
+  affiliateType    String?  @default("employee")
+  orderId          String?
+  orderCode        String?
+  orderAmount      Float    @default(0)
+  commissionRate   Float    @default(0)
+  commissionAmount Float    @default(0)
+  status           String   @default("pending")
+  paidAt           DateTime?
+  period           String?
+  note             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([affiliateId])
+  @@index([status])
+  @@map("affiliate_commissions")
+}
+
+// Phase 3: Field Sales Routes
+model FieldSalesRoute {
+  id             String   @id @default(cuid())
+  code           String   @unique
+  name           String
+  employeeId     String?
+  region         String?
+  district       String?
+  visitFrequency String?  @default("weekly")
+  customerCount  Int      @default(0)
+  routeMap       Json?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  routePoints    RouteMap[]
+
+  @@map("field_sales_routes")
+}
+
+// Phase 3: Route Maps
+model RouteMap {
+  id                String   @id @default(cuid())
+  fieldSalesRouteId String
+  fieldSalesRoute   FieldSalesRoute @relation(fields: [fieldSalesRouteId], references: [id], onDelete: Cascade)
+  customerName      String
+  address           String?
+  latitude          Float?
+  longitude         Float?
+  visitOrder        Int      @default(0)
+  lastVisitedAt     DateTime?
+  visitNote         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("route_maps")
+}
+
+// Phase 3: Dealer Policies
+model DealerPolicy {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String
+  type            String   @default("discount")
+  tierLevel       String?
+  discountPercent Float?   @default(0)
+  targetAmount    Float?   @default(0)
+  bonusPercent    Float?   @default(0)
+  conditions      String?
+  startDate       DateTime?
+  endDate         DateTime?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  dealerOrders    DealerOrder[]
+
+  @@map("dealer_policies")
+}
+
+// Phase 3: Dealer Orders
+model DealerOrder {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  distributorId   String
+  distributor     Distributor @relation(fields: [distributorId], references: [id], onDelete: Cascade)
+  policyId        String?
+  policy          DealerPolicy? @relation(fields: [policyId], references: [id], onDelete: SetNull)
+  items           Json?
+  subtotal        Float    @default(0)
+  discount        Float    @default(0)
+  total           Float    @default(0)
+  status          String   @default("pending")
+  expectedDelivery DateTime?
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@index([distributorId])
+  @@map("dealer_orders")
+}
+
+// Phase 3: Web Stores
+model WebStore {
+  id        String   @id @default(cuid())
+  name      String
+  domain    String?
+  logo      String?
+  theme     Json?
+  isActive  Boolean  @default(true)
+  config    Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("web_stores")
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -583,12 +1621,12 @@ model MarketingCampaign {
 
 model QualityCheck {
   id          String   @id @default(cuid())
-  code        String   @unique // QC-001
+  code        String   @unique
   product     String
   batch       String
-  type        String   @default("incoming") // incoming, in_process, final, customer_return
+  type        String   @default("incoming")
   inspector   String
-  result      String   @default("pending") // passed, failed, pending, conditional
+  result      String   @default("pending")
   defectRate  Float    @default(0)
   checkedAt   DateTime @default(now())
   note        String?
@@ -620,12 +1658,12 @@ model QualityCriteria {
 
 model ITAsset {
   id          String   @id @default(cuid())
-  code        String   @unique // AST-001
+  code        String   @unique
   name        String
-  type        String   // server, workstation, network, software
-  status      String   @default("active") // active, maintenance, retired
+  type        String
+  status      String   @default("active")
   location    String?
-  assignedTo  String?  // Employee ID or name
+  assignedTo  String?
   purchaseDate DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -636,11 +1674,11 @@ model ITAsset {
 
 model SupportTicket {
   id          String   @id @default(cuid())
-  code        String   @unique // TKT-001
+  code        String   @unique
   title       String
   description String?
-  priority    String   @default("medium") // low, medium, high, critical
-  status      String   @default("open") // open, in_progress, resolved, closed
+  priority    String   @default("medium")
+  status      String   @default("open")
   requester   String
   assignee    String?
   createdAt   DateTime @default(now())
@@ -656,7 +1694,7 @@ model SupportTicket {
 
 model Distributor {
   id        String   @id @default(cuid())
-  code      String   @unique // DL-001
+  code      String   @unique
   name      String
   region    String
   type      String   @default("Cấp 1")
@@ -667,12 +1705,14 @@ model Distributor {
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
 
+  dealerOrders DealerOrder[]
+
   @@map("distributors")
 }
 
 model DistributionRoute {
   id        String   @id @default(cuid())
-  code      String   @unique // RT-001
+  code      String   @unique
   name      String
   driverId  String?
   status    String   @default("active")
@@ -685,13 +1725,13 @@ model DistributionRoute {
 
 model Risk {
   id          String   @id @default(cuid())
-  code        String   @unique // RSK-001
+  code        String   @unique
   title       String
   description String?
-  category    String   @default("operational") // operational, financial, strategic, compliance
-  impact      String   @default("medium") // low, medium, high, extreme
-  likelihood  String   @default("medium") // low, medium, high
-  status      String   @default("identified") // identified, monitoring, mitigated, occurred
+  category    String   @default("operational")
+  impact      String   @default("medium")
+  likelihood  String   @default("medium")
+  status      String   @default("identified")
   owner       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -706,13 +1746,13 @@ model Risk {
 
 model GatewayIntegration {
   id          String   @id @default(cuid())
-  provider    String   // name of provider (e.g. MISA, SAP, ZALO)
-  category    String   // e-invoice, erp, timekeeping, message...
-  name        String   // Display name: 'MISA meInvoice', 'SAP S/4HANA'
+  provider    String
+  category    String
+  name        String
   apiKey      String?
   endpoint    String?
   webhookUrl  String?
-  status      String   @default("inactive") // active, inactive, error
+  status      String   @default("inactive")
   lastSyncAt  DateTime?
   errorLog    String?
   createdById String?
@@ -723,4 +1763,249 @@ model GatewayIntegration {
   @@index([category])
   @@index([status])
   @@map("gateway_integrations")
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// PHASE 5: Workflow, Tasks, Chat, Warranty
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// Tasks
+model Task {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  title         String
+  description   String?
+  projectId     String?
+  assigneeId    String?
+  assignee      Employee? @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  reporterId    String?
+  reporter      Employee? @relation("TaskReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  priority      String   @default("medium")
+  status        String   @default("todo")
+  dueDate       DateTime?
+  startDate     DateTime?
+  completedAt   DateTime?
+  estimatedHours Float?
+  actualHours   Float?
+  tags          String?
+  parentTaskId  String?
+  parentTask    Task?    @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subTasks      Task[]   @relation("TaskHierarchy")
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  comments      TaskComment[]
+
+  @@index([assigneeId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@map("tasks")
+}
+
+model TaskComment {
+  id            String   @id @default(cuid())
+  taskId        String
+  task          Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content       String
+  attachmentUrl String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([taskId])
+  @@map("task_comments")
+}
+
+// Workflows
+model Workflow {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  description  String?
+  module       String?
+  triggerEvent String?
+  isActive     Boolean  @default(true)
+  version      Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  steps        WorkflowStep[]
+  instances    WorkflowInstance[]
+
+  @@map("workflows")
+}
+
+model WorkflowStep {
+  id                 String   @id @default(cuid())
+  workflowId         String
+  workflow           Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  stepOrder          Int      @default(1)
+  name               String
+  type               String   @default("approval")
+  assigneeRole       String?
+  assigneeId         String?
+  action             String?
+  conditionJson      Json?
+  timeoutHours       Int?
+  nextStepOnApprove  String?
+  nextStepOnReject   String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([workflowId])
+  @@map("workflow_steps")
+}
+
+model WorkflowInstance {
+  id            String   @id @default(cuid())
+  workflowId    String
+  workflow      Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  refType       String
+  refId         String
+  currentStepId String?
+  status        String   @default("running")
+  startedAt     DateTime @default(now())
+  completedAt   DateTime?
+  data          Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([workflowId])
+  @@index([refType, refId])
+  @@map("workflow_instances")
+}
+
+// Chat
+model ChatRoom {
+  id          String   @id @default(cuid())
+  name        String?
+  type        String   @default("direct")
+  description String?
+  avatarUrl   String?
+  isArchived  Boolean  @default(false)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     ChatRoomMember[]
+  messages    ChatMessage[]
+
+  @@map("chat_rooms")
+}
+
+model ChatRoomMember {
+  id         String   @id @default(cuid())
+  roomId     String
+  room       ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       String   @default("member")
+  lastReadAt DateTime?
+  joinedAt   DateTime @default(now())
+
+  @@unique([roomId, userId])
+  @@map("chat_room_members")
+}
+
+model ChatMessage {
+  id            String   @id @default(cuid())
+  roomId        String
+  room          ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId      String
+  sender        User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content       String?
+  type          String   @default("text")
+  attachmentUrl String?
+  replyToId     String?
+  isEdited      Boolean  @default(false)
+  isPinned      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  @@index([roomId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+// Warranty
+model WarrantyPolicy {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String
+  productCategory String?
+  durationMonths  Int      @default(12)
+  coverageType    String?  @default("full")
+  conditions      String?
+  exclusions      String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  processes       WarrantyProcess[]
+  tickets         WarrantyTicket[]
+
+  @@map("warranty_policies")
+}
+
+model WarrantyProcess {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  policyId      String?
+  policy        WarrantyPolicy? @relation(fields: [policyId], references: [id], onDelete: SetNull)
+  steps         Json?
+  totalSlaHours Int?     @default(72)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tickets       WarrantyTicket[]
+
+  @@map("warranty_processes")
+}
+
+model WarrantyTicket {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName    String
+  customerPhone   String?
+  productName     String
+  productSerial   String?
+  purchaseDate    DateTime? @db.Date
+  policyId        String?
+  policy          WarrantyPolicy? @relation(fields: [policyId], references: [id], onDelete: SetNull)
+  processId       String?
+  process         WarrantyProcess? @relation(fields: [processId], references: [id], onDelete: SetNull)
+  currentStep     Int?     @default(1)
+  issue           String
+  diagnosis       String?
+  solution        String?
+  partsCost       Float?   @default(0)
+  laborCost       Float?   @default(0)
+  totalCost       Float?   @default(0)
+  isUnderWarranty Boolean? @default(true)
+  assignedTo      String?
+  status          String   @default("received")
+  receivedAt      DateTime? @default(now())
+  completedAt     DateTime?
+  returnedAt      DateTime?
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  @@index([status])
+  @@index([customerId])
+  @@map("warranty_tickets")
 }

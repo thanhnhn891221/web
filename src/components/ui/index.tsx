@@ -1,5 +1,5 @@
 import React from 'react';
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, LayoutList, LayoutGrid } from 'lucide-react';
 
 // ============================================
 // Button Component
@@ -280,7 +280,7 @@ export function Card({ children, className = '', hover = false, padding = 'md', 
 
   return (
     <div
-      className={`card ${paddingMap[padding]} ${hover ? 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all' : ''} bg-gradient-to-br from-rose-50 to-slate-50 border border-rose-100 dark:from-slate-900 dark:to-slate-800 dark:border-slate-800 ${className}`}
+      className={`card ${paddingMap[padding]} ${hover ? 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all' : ''} bg-gradient-to-br from-emerald-50/30 to-slate-50 border border-slate-200 dark:from-slate-900 dark:to-slate-800 dark:border-slate-800 ${className}`}
       onClick={onClick}
     >
       {children}

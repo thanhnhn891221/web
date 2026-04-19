@@ -59,7 +59,7 @@ export default function LoginPage() {
           backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
           backgroundSize: '32px 32px',
         }} />
-        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-20 bg-accent-500 blur-3xl" />
+        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-15 bg-emerald-400 blur-3xl" />
         
         {/* Mobile: Dynamic "Connected Nodes" Graphic */}
         <div className="absolute inset-0 flex items-center justify-center opacity-30 lg:opacity-50 pointer-events-none">
@@ -67,7 +67,7 @@ export default function LoginPage() {
              {/* Center Node */}
              <div className="absolute w-24 h-24 rounded-full border border-white/20 shadow-[0_0_50px_rgba(255,255,255,0.1)] flex items-center justify-center">
                 <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center animate-pulse">
-                   <div className="w-8 h-8 rounded-full bg-accent-500 shadow-[0_0_20px_var(--accent-500)]" />
+                   <div className="w-8 h-8 rounded-full bg-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.5)]" />
                 </div>
              </div>
              {/* Orbiting Nodes (CSS Simulation) */}
@@ -84,13 +84,11 @@ export default function LoginPage() {
         <div className="relative z-10 my-auto flex items-center justify-center h-[260px] lg:h-[500px] mt-4 lg:mt-0">
            {/* Center Glowing Core */}
            <div className="relative flex items-center justify-center w-20 h-20 lg:w-32 lg:h-32 z-20">
-              <div className="absolute inset-0 rounded-xl lg:rounded-2xl rotate-45 bg-[var(--primary-600)] shadow-[0_0_50px_var(--primary-600)] animate-pulse" />
-              <div className="absolute inset-1.5 lg:inset-2 rounded-lg lg:rounded-xl rotate-45 bg-gradient-to-br from-yellow-400 to-yellow-600" />
-              <div className="absolute inset-2 lg:inset-2.5 rounded-lg lg:rounded-xl rotate-45 bg-[var(--primary-900)] flex items-center justify-center">
-                 <div className="-rotate-45 text-center px-1">
-                    <p className="text-white font-black text-xs lg:text-xl leading-none tracking-tight">AIO.MS</p>
-                    <p className="text-[#FFD700] text-[6px] lg:text-[8px] mt-0.5 tracking-widest">ECOSYSTEM</p>
-                 </div>
+              <div className="absolute inset-0 rounded-2xl lg:rounded-3xl bg-[#054f31] shadow-[0_0_60px_rgba(5,79,49,0.6)] animate-pulse" />
+              <div className="absolute inset-1 lg:inset-1.5 rounded-xl lg:rounded-2xl bg-[#065f3a] border border-white/10" />
+              <div className="absolute inset-2 lg:inset-2.5 rounded-lg lg:rounded-xl bg-[#054f31] flex flex-col items-center justify-center">
+                 <p className="text-white font-black text-sm lg:text-2xl leading-none tracking-tight">AIO</p>
+                 <p className="text-white/70 font-bold text-[7px] lg:text-[11px] leading-none mt-0.5">.MS</p>
               </div>
            </div>
 
@@ -110,18 +108,18 @@ export default function LoginPage() {
 
               return (
                  <React.Fragment key={i}>
-                    {/* Golden Connecting Line - Desktop */}
+                    {/* Connecting Line - Desktop */}
                     <div 
-                       className="absolute h-[1.5px] bg-gradient-to-r from-[#FFD700] to-transparent opacity-60 origin-left hidden lg:block"
+                       className="absolute h-[1.5px] bg-gradient-to-r from-white/40 to-transparent opacity-60 origin-left hidden lg:block"
                        style={{ 
                           width: `${radiusDesktop}px`, 
                           top: '50%', left: '50%', 
                           transform: `rotate(${i * (360 / totalNodes)}deg)` 
                        }} 
                     />
-                    {/* Golden Connecting Line - Mobile */}
+                    {/* Connecting Line - Mobile */}
                     <div 
-                       className="absolute h-[1.5px] bg-gradient-to-r from-[#FFD700] to-transparent opacity-60 origin-left lg:hidden"
+                       className="absolute h-[1.5px] bg-gradient-to-r from-white/40 to-transparent opacity-60 origin-left lg:hidden"
                        style={{ 
                           width: `${radiusMobile}px`, 
                           top: '50%', left: '50%', 
@@ -131,27 +129,25 @@ export default function LoginPage() {
                     
                     {/* Satellite Node - Mobile */}
                     <div 
-                       className="absolute flex items-center justify-center rounded-lg bg-[var(--primary-800)] border-[1.5px] shadow-[0_0_15px_rgba(255,215,0,0.3)] w-5 h-5 lg:hidden"
+                       className="absolute flex items-center justify-center rounded-lg bg-white/10 border-[1.5px] border-white/30 shadow-[0_0_10px_rgba(255,255,255,0.1)] w-5 h-5 lg:hidden"
                        style={{ 
                           top: `calc(50% + ${yMobile}px - 10px)`, 
                           left: `calc(50% + ${xMobile}px - 10px)`,
-                          borderColor: '#FFD700',
                           animation: `pulse-slow 3s infinite ${i * 0.15}s`
                        }}
                     >
-                       <span className="text-[#FFD700] font-bold text-[8px] font-mono">{initials[i]}</span>
+                       <span className="text-white font-bold text-[8px] font-mono">{initials[i]}</span>
                     </div>
                     {/* Satellite Node - Desktop */}
                     <div 
-                       className="absolute hidden lg:flex items-center justify-center rounded-xl bg-[var(--primary-800)] border-[1.5px] shadow-[0_0_15px_rgba(255,215,0,0.3)] w-7 h-7"
+                       className="absolute hidden lg:flex items-center justify-center rounded-xl bg-white/10 border-[1.5px] border-white/30 shadow-[0_0_10px_rgba(255,255,255,0.1)] w-7 h-7"
                        style={{ 
                           top: `calc(50% + ${yDesktop}px - 14px)`, 
                           left: `calc(50% + ${xDesktop}px - 14px)`,
-                          borderColor: '#FFD700',
                           animation: `pulse-slow 3s infinite ${i * 0.15}s`
                        }}
                     >
-                       <span className="text-[#FFD700] font-bold text-[11px] font-mono">{initials[i]}</span>
+                       <span className="text-white font-bold text-[11px] font-mono">{initials[i]}</span>
                     </div>
                  </React.Fragment>
               );
@@ -230,7 +226,7 @@ export default function LoginPage() {
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white text-sm font-bold transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
               style={{
                 background: isLoading ? 'var(--primary-400)' : 'linear-gradient(135deg, var(--primary-600), var(--primary-500))',
-                boxShadow: '0 8px 20px rgba(220, 38, 38, 0.25)',
+                boxShadow: '0 8px 20px rgba(5, 79, 49, 0.35)',
               }}
             >
               {isLoading ? (

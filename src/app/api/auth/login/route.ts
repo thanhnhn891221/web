@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
           existing.canCreate = existing.canCreate || perm.canCreate;
           existing.canEdit = existing.canEdit || perm.canEdit;
           existing.canDelete = existing.canDelete || perm.canDelete;
+          existing.canManage = existing.canManage || (perm as any).canManage || false;
         } else {
           permMap.set(perm.module.code, {
             moduleCode: perm.module.code,
@@ -86,6 +87,7 @@ export async function POST(request: NextRequest) {
             canCreate: perm.canCreate,
             canEdit: perm.canEdit,
             canDelete: perm.canDelete,
+            canManage: (perm as any).canManage || false,
           });
         }
       }

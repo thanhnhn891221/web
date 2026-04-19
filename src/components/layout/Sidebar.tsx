@@ -145,21 +145,18 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {/* Logo */}
         <div className="flex items-center h-16 px-3 border-b border-white/10">
           <div className="flex items-center gap-2.5">
-            {/* Diamond Logo — exactly as approved shape */}
-            <div className="relative flex items-center justify-center w-10 h-10 flex-shrink-0" style={{ overflow: 'visible' }}>
-               <div className="absolute w-7 h-7 rounded-[4px] bg-[var(--primary-600)] shadow-[0_0_12px_var(--primary-500)]" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(45deg)' }} />
-               <div className="absolute w-[26px] h-[26px] rounded-[3px] bg-gradient-to-br from-yellow-400 to-yellow-600" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(45deg)' }} />
-               <div className="absolute w-[22px] h-[22px] rounded-[2px] bg-[var(--primary-900)] flex items-center justify-center" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(45deg)' }}>
-                  <span className="-rotate-45 font-black text-[9px] text-white tracking-tighter leading-none mt-[1px]">AIO</span>
-               </div>
+            {/* AIO.MS Logo — Rounded Square */}
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl flex flex-col items-center justify-center shadow-lg" style={{ background: '#054f31' }}>
+               <span className="font-black text-[13px] text-white leading-none tracking-tight">AIO</span>
+               <span className="font-bold text-[8px] text-white/80 leading-none mt-[1px]">.MS</span>
             </div>
             {!collapsed && (
               <div className="animate-fade-in pl-1">
                 <h1 className="text-white font-bold text-[17px] tracking-tight leading-none">
                   AIO.MS
                 </h1>
-                <p className="text-[#FFD700] text-[9px] tracking-[0.15em] uppercase mt-0.5 font-semibold">
-                  Ecosystem
+                <p className="text-white/50 text-[9px] tracking-[0.1em] uppercase mt-0.5 font-medium">
+                  BY AIO.ECOSYSTEM
                 </p>
               </div>
             )}

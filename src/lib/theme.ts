@@ -16,9 +16,9 @@ export interface ThemeConfig {
 }
 
 export const DEFAULT_THEME: ThemeConfig = {
-  primaryColor: '#C8283C',  // AIO Red
-  accentColor: '#EAB308',   // AIO Gold
-  bgLightColor: '#F8F8F8',  // Light mode bg
+  primaryColor: '#054f31',  // AIO Green (Màu chủ đạo)
+  accentColor: '#ff8080',   // Coral Pink (Màu điểm nhấn)
+  bgLightColor: '#e5e5e5',  // Light mode bg
   bgDarkColor: '#0A0A0F',   // Dark mode bg
 };
 

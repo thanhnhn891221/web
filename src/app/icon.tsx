@@ -19,44 +19,39 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #991B1B, #7F1D1D)',
+          background: '#054f31',
+          borderRadius: '12px',
         }}
       >
-        {/* Rotated diamond shape like the login page */}
         <div
           style={{
-            width: '38px',
-            height: '38px',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            transform: 'rotate(45deg)',
-            borderRadius: '6px',
-            border: '2px solid #FFD700',
-            background: 'linear-gradient(135deg, #B91C1C, #991B1B)',
-            boxShadow: '0 0 12px rgba(255, 215, 0, 0.4)',
           }}
         >
           <div
             style={{
-              transform: 'rotate(-45deg)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
+              fontSize: '16px',
+              fontWeight: 900,
+              color: 'white',
+              lineHeight: 1,
+              letterSpacing: '-0.5px',
             }}
           >
-            <div
-              style={{
-                fontSize: '12px',
-                fontWeight: 900,
-                color: 'white',
-                lineHeight: 1,
-                letterSpacing: '-0.5px',
-              }}
-            >
-              AIO
-            </div>
+            AIO
+          </div>
+          <div
+            style={{
+              fontSize: '10px',
+              fontWeight: 700,
+              color: 'rgba(255,255,255,0.8)',
+              lineHeight: 1,
+              marginTop: '1px',
+            }}
+          >
+            .MS
           </div>
         </div>
       </div>

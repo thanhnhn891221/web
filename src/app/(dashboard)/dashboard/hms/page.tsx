@@ -5,9 +5,13 @@ import {
   Users, Building2, UserPlus, Search,
   Download, Eye, Edit, BadgeCheck, Trash2,
   Plus, Calendar, User, Mail, Phone, Hash,
-  AlertTriangle, Save, Shield, LayoutGrid, LayoutList, Lock, Unlock, Key, Copy, XCircle, RefreshCw, X
+  AlertTriangle, Save, Shield, LayoutGrid, LayoutList, Lock, Unlock, Key, Copy, XCircle, RefreshCw, X,
+  Clock, CalendarCheck, Wallet
 } from 'lucide-react';
 import { Button, Badge, Card, Modal, Input, Select, StatCard, ConfirmModal, ViewToggle } from '@/components/ui';
+import AttendanceTab from './AttendanceTab';
+import LeaveTab from './LeaveTab';
+import PayrollTab from './PayrollTab';
 
 interface EmployeeData {
   id: string;
@@ -47,7 +51,7 @@ const LEVEL_OPTIONS = [
   { value: 'director', label: 'Giám đốc' },
 ];
 
-type Tab = 'overview' | 'employees' | 'departments';
+type Tab = 'overview' | 'employees' | 'departments' | 'attendance' | 'leave' | 'payroll';
 
 export default function HMSPage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -352,7 +356,8 @@ export default function HMSPage() {
       level: emp.level,
       status: emp.status,
       hireDate: emp.hireDate,
-      sysRole: emp.sysRole || ''
+      sysRole: emp.sysRole || '',
+      password: ''
     });
     setIsEmployeeModalOpen(true);
   };
@@ -373,7 +378,7 @@ export default function HMSPage() {
       return (
         <Button icon={UserPlus} onClick={() => { 
           setEditingEmp(null); 
-          setEmpForm({ name: '', email: '', phone: '', department: '', position: '', level: 'junior', status: 'active', hireDate: new Date().toISOString().split('T')[0], sysRole: '' });
+          setEmpForm({ name: '', email: '', phone: '', department: '', position: '', level: 'junior', status: 'active', hireDate: new Date().toISOString().split('T')[0], sysRole: '', password: '' });
           setIsEmployeeModalOpen(true); 
         }}>
           Thêm nhân viên
@@ -419,13 +424,16 @@ export default function HMSPage() {
           { key: 'overview', label: 'Tổng quan', icon: Eye },
           { key: 'employees', label: 'Nhân viên', icon: Users },
           { key: 'departments', label: 'Phòng ban', icon: Building2 },
+          { key: 'attendance', label: 'Chấm công', icon: Clock },
+          { key: 'leave', label: 'Nghỉ phép', icon: CalendarCheck },
+          { key: 'payroll', label: 'Bảng lương', icon: Wallet },
         ].map((tab) => {
           const Icon = tab.icon;
           return (
             <button key={tab.key} onClick={() => setActiveTab(tab.key as Tab)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
                 ${activeTab === tab.key ? 'bg-[var(--primary-600)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--primary-600)]/10 hover:text-[var(--text-primary)]'}`}>
-              <Icon size={16} />{tab.label}
+              <Icon size={16} /><span className="hidden sm:inline">{tab.label}</span>
             </button>
           );
         })}
@@ -482,7 +490,7 @@ export default function HMSPage() {
           </div>
 
           {viewMode === 'list' ? (
-            <Card noPadding className="overflow-hidden border border-[var(--border-color)]">
+            <Card padding="none" className="overflow-hidden border border-[var(--border-color)]">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -608,6 +616,24 @@ export default function HMSPage() {
               </div>
             </Card>
           ))}
+        </div>
+      )}
+
+      {activeTab === 'attendance' && (
+        <div className="animate-fade-in">
+          <AttendanceTab employees={employees.map(e => ({ id: e.id, code: e.code, name: e.name }))} />
+        </div>
+      )}
+
+      {activeTab === 'leave' && (
+        <div className="animate-fade-in">
+          <LeaveTab employees={employees.map(e => ({ id: e.id, code: e.code, name: e.name }))} />
+        </div>
+      )}
+
+      {activeTab === 'payroll' && (
+        <div className="animate-fade-in">
+          <PayrollTab employees={employees.map(e => ({ id: e.id, code: e.code, name: e.name }))} />
         </div>
       )}
 

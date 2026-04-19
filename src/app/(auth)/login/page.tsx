@@ -11,6 +11,12 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Forgot Password State
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +50,34 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setForgotMessage('');
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail.trim().toLowerCase() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || 'Có lỗi xảy ra');
+      } else {
+        setForgotMessage(data.message);
+      }
+    } catch {
+      setError('Không thể kết nối đến máy chủ.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white">
@@ -165,12 +199,15 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8 bg-white/50 backdrop-blur-3xl -mt-6 lg:mt-0 lg:rounded-none rounded-t-3xl relative z-20">
         <div className="w-full max-w-sm animate-slide-left">
           <div className="mb-6 text-center lg:text-left">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: 'var(--slate-900)' }}>Đăng nhập</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: 'var(--slate-900)' }}>
+              {isForgotPassword ? 'Khôi phục mật khẩu' : 'Đăng nhập'}
+            </h2>
             <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-              Truy cập vào hệ sinh thái.
+              {isForgotPassword ? 'Nhập email để nhận hướng dẫn khôi phục.' : 'Truy cập vào hệ sinh thái.'}
             </p>
           </div>
 
+          {!isForgotPassword ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold" style={{ color: 'var(--slate-700)' }}>Email doanh nghiệp</label>
@@ -187,7 +224,7 @@ export default function LoginPage() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold" style={{ color: 'var(--slate-700)' }}>Mật khẩu</label>
-                <button type="button" className="text-[11px] font-semibold hover:underline" style={{ color: 'var(--primary-500)' }}>Quên mật khẩu?</button>
+                <button type="button" onClick={() => setIsForgotPassword(true)} className="text-[11px] font-semibold hover:underline" style={{ color: 'var(--primary-500)' }}>Quên mật khẩu?</button>
               </div>
               <div className="relative">
                 <input
@@ -242,6 +279,53 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+          ) : (
+          <form onSubmit={handleForgotPassword} className="space-y-4 animate-fade-in">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold" style={{ color: 'var(--slate-700)' }}>Email doanh nghiệp</label>
+              <input
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                placeholder="admin@aio.ms"
+                required
+                className="w-full px-4 py-3 rounded-xl text-base md:text-sm outline-none transition-all duration-200 border bg-slate-50 focus:ring-2 focus:border-transparent focus:bg-white"
+                style={{ borderColor: 'var(--border-color)', '--tw-ring-color': 'var(--primary-400)' } as React.CSSProperties}
+              />
+            </div>
+
+            {error && (
+              <div className="px-4 py-2.5 rounded-xl text-xs animate-scale-in text-center font-medium" style={{ background: 'var(--rose-light)', color: 'var(--rose)' }}>
+                {error}
+              </div>
+            )}
+            {forgotMessage && (
+              <div className="px-4 py-2.5 rounded-xl text-xs animate-scale-in text-center font-medium" style={{ background: 'var(--emerald-light)', color: 'var(--emerald)' }}>
+                {forgotMessage}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white text-sm font-bold transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+              style={{
+                background: isLoading ? 'var(--primary-400)' : 'linear-gradient(135deg, var(--primary-600), var(--primary-500))',
+                boxShadow: '0 8px 20px rgba(5, 79, 49, 0.35)',
+              }}
+            >
+              {isLoading ? 'Đang gửi...' : 'Gửi yêu cầu khôi phục'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsForgotPassword(false); setError(''); setForgotMessage(''); }}
+              className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 hover:bg-slate-50"
+              style={{ color: 'var(--slate-600)' }}
+            >
+              Quay lại đăng nhập
+            </button>
+          </form>
+          )}
 
           <p className="mt-8 text-center text-[10px] text-slate-400 lg:hidden">© 2026 AIO.MS — Enterprise System</p>
         </div>

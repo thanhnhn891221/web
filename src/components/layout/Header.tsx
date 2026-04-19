@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Bell, Sun, Moon, Menu, ChevronRight, LogOut, User, Shield, Compass, RefreshCw, Check, X, Eye, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Menu, ChevronRight, LogOut, User, Shield, Compass, RefreshCw, Check, X, Eye, Plus, Edit, Trash2, Key } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { MODULES } from '@/lib/modules';
 
@@ -66,6 +66,10 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+  const [passwordStatus, setPasswordStatus] = useState({ type: '', message: '', loading: false });
+  
   const menuRef = useRef<HTMLDivElement>(null);
   const syncRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -159,6 +163,35 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
 
     setIsSyncing(false);
   }, [updateSyncTask, isSyncing]);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordForm.new !== passwordForm.confirm) {
+      setPasswordStatus({ type: 'error', message: 'Mật khẩu xác nhận không khớp', loading: false });
+      return;
+    }
+    setPasswordStatus({ type: '', message: '', loading: true });
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: passwordForm.current, newPassword: passwordForm.new })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPasswordStatus({ type: 'success', message: 'Thay đổi mật khẩu thành công.', loading: false });
+        setTimeout(() => {
+          setIsChangingPassword(false);
+          setPasswordForm({ current: '', new: '', confirm: '' });
+          setPasswordStatus({ type: '', message: '', loading: false });
+        }, 2000);
+      } else {
+        setPasswordStatus({ type: 'error', message: data.error || 'Có lỗi xảy ra', loading: false });
+      }
+    } catch {
+      setPasswordStatus({ type: 'error', message: 'Lỗi kết nối', loading: false });
+    }
+  };
 
   // Handle global sync triggers from other components
   useEffect(() => {
@@ -614,6 +647,41 @@ export default function Header({ sidebarCollapsed, onMenuToggle, darkMode, onThe
               </div>
             </div>
           )}
+
+          {/* Change Password Toggle */}
+          <div className="w-full mt-4 pt-4 border-t border-white/10">
+             <button onClick={() => setIsChangingPassword(!isChangingPassword)} className="w-full flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-sm font-medium">
+               <span className="flex items-center gap-2"><Key size={16} className="text-amber-400" /> Đổi mật khẩu đăng nhập</span>
+               <ChevronRight size={16} className={`transition-transform ${isChangingPassword ? 'rotate-90' : ''}`} />
+             </button>
+             
+             {isChangingPassword && (
+               <form onSubmit={handleChangePassword} className="mt-3 space-y-3 animate-fade-in p-4 rounded-xl bg-black/20 border border-white/5">
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/60">Mật khẩu hiện tại</label>
+                   <input type="password" required value={passwordForm.current} onChange={e => setPasswordForm({...passwordForm, current: e.target.value})} className="w-full px-3 py-2 rounded bg-white/5 border border-white/10 text-sm outline-none focus:border-[var(--primary-400)] transition-colors" />
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/60">Mật khẩu mới</label>
+                   <input type="password" required value={passwordForm.new} onChange={e => setPasswordForm({...passwordForm, new: e.target.value})} className="w-full px-3 py-2 rounded bg-white/5 border border-white/10 text-sm outline-none focus:border-[var(--primary-400)] transition-colors" />
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/60">Xác nhận mật khẩu mới</label>
+                   <input type="password" required value={passwordForm.confirm} onChange={e => setPasswordForm({...passwordForm, confirm: e.target.value})} className="w-full px-3 py-2 rounded bg-white/5 border border-white/10 text-sm outline-none focus:border-[var(--primary-400)] transition-colors" />
+                 </div>
+                 
+                 {passwordStatus.message && (
+                   <div className={`p-2 rounded text-xs text-center font-medium ${passwordStatus.type === 'error' ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                     {passwordStatus.message}
+                   </div>
+                 )}
+                 
+                 <button type="submit" disabled={passwordStatus.loading} className="w-full py-2.5 rounded-lg bg-[var(--primary-500)] text-white text-sm font-bold disabled:opacity-50">
+                    {passwordStatus.loading ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
+                 </button>
+               </form>
+             )}
+          </div>
         </div>
       </Modal>
 
